@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     Container, Box, Typography, Paper, TextField, Button, 
     Stack, Grid, MenuItem, FormControl, InputLabel, Select, 
@@ -18,8 +18,16 @@ import InfoIcon from '@mui/icons-material/Info';
 
 export default function SessionBooking({ auth, schedules = [], skills = [], userBookedSchedules = [], relationships = [], customSchedules = [] }) {
     
-    const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
-    const [selectedDate, setSelectedDate] = useState(todayStr); 
+    // --- DATE CATCHING LOGIC ---
+    const todayObj = new Date();
+    const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+    
+    // Check the URL for a passed-in date from the dashboard
+    const queryParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const urlDate = queryParams.get('date');
+    const initialDate = urlDate || todayStr;
+
+    const [selectedDate, setSelectedDate] = useState(initialDate); 
 
     const { data, setData, post, processing, errors } = useForm({
         topic_title: '',
@@ -29,7 +37,7 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
         mentor_id: '',
         availability_id: '',
         is_custom: false,
-        session_date: todayStr,
+        session_date: initialDate, // Set the default form date to the URL date
         start_time: '',
         end_time: '',
     });
@@ -50,7 +58,16 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
         return `${formattedH}:${minutes} ${ampm}`;
     };
 
-    const [currentDate, setCurrentDate] = useState(new Date());
+    // Safe date parser to prevent JavaScript timezone shifts
+    const getCalendarDate = (dateString) => {
+        if (!dateString) return new Date();
+        const [y, m, d] = dateString.split('-');
+        return new Date(y, m - 1, d);
+    };
+
+    // Set the calendar to show the month of the clicked date!
+    const [currentDate, setCurrentDate] = useState(getCalendarDate(urlDate));
+    
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth(); 
     const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -79,7 +96,7 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
     const filteredSchedules = data.mentor_id ? mentorSchedules.filter(s => s.available_date === selectedDate) : [];
     const dayCustomSchedules = customSchedules.filter(s => s.session_date === selectedDate);
     
-    // NEW: Check if the user already has an off-schedule request for THIS specific mentor on this date
+    // Check if the user already has an off-schedule request for THIS specific mentor on this date
     const hasOffSchedWithSelectedMentor = dayCustomSchedules.some(s => s.mentor_id === data.mentor_id);
 
     const isSubmitDisabled = processing || 
@@ -249,7 +266,6 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                                 {data.mentor_id && filteredSchedules.length === 0 && (
                                                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: data.is_custom ? '#fff8e1' : 'transparent', borderColor: data.is_custom ? '#ffe082' : 'divider' }}>
                                                         
-                                                        {/* NEW: Block the form if they already have an off-schedule request for this mentor on this date */}
                                                         {hasOffSchedWithSelectedMentor ? (
                                                             <Alert severity="warning" sx={{ borderRadius: 2, '& .MuiAlert-message': { width: '100%' } }}>
                                                                 You already have an off-schedule request pending for this mentor on this date.
@@ -355,7 +371,6 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                             const formattedCellDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
                                             
                                             const daySchedules = mentorSchedules.filter(s => s.available_date === formattedCellDate);
-                                            // NEW: Check if there are any custom schedules mapped to this cell date
                                             const hasCustomSchedulesOnDay = customSchedules.some(s => s.session_date === formattedCellDate);
                                             
                                             const isSelected = selectedDate === formattedCellDate;
@@ -382,12 +397,10 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                                         {dateNum}
                                                     </Typography>
 
-                                                    {/* Flex box to hold dots perfectly centered at the bottom */}
                                                     <Box sx={{ display: 'flex', gap: 0.5, position: 'absolute', bottom: 6 }}>
                                                         {daySchedules.length > 0 && !isSelected && (
                                                             <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main' }} />
                                                         )}
-                                                        {/* NEW: Orange Dot for Custom Schedules */}
                                                         {hasCustomSchedulesOnDay && !isSelected && (
                                                             <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main' }} />
                                                         )}

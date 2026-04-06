@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, Link } from '@inertiajs/react';
 import { 
-    Container, Paper, Typography, Grid, Box, Button, Divider, Chip 
+    Container, Paper, Typography, Grid, Box, Button, Divider, Chip, Avatar 
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -78,18 +78,27 @@ export default function MentorApplicationDetails({ auth, application }) {
 
                     <Divider sx={{ mb: 4 }} />
 
-                    {/* Applicant Header */}
+                    {/* Applicant Header with Avatar */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-                        <div>
-                            <Typography variant="h4" fontWeight="bold" gutterBottom>
-                                {application.applicant.full_name}
-                            </Typography>
-                            <Chip 
-                                label={application.status.toUpperCase()} 
-                                color={application.status === 'pending' ? 'warning' : application.status === 'approved' ? 'success' : 'error'} 
-                                size="small" 
-                            />
-                        </div>
+                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                            {/* NEW: Profile Picture Avatar */}
+                            <Avatar 
+                                src={application.applicant.avatar_url}
+                                sx={{ width: 80, height: 80, bgcolor: 'primary.main', fontSize: '2.5rem' }}
+                            >
+                                {application.applicant.full_name.charAt(0)}
+                            </Avatar>
+                            <Box>
+                                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 0.5 }}>
+                                    {application.applicant.full_name}
+                                </Typography>
+                                <Chip 
+                                    label={application.status.toUpperCase()} 
+                                    color={application.status === 'pending' ? 'warning' : application.status === 'approved' ? 'success' : 'error'} 
+                                    size="small" 
+                                />
+                            </Box>
+                        </Box>
                         <Typography variant="body2" color="text.secondary">
                             Applied on: {application.created_at}
                         </Typography>

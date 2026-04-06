@@ -193,4 +193,38 @@ class AdminController extends Controller
         $user->delete(); // Database cascades will handle the linked profiles automatically
         return back()->with('success', 'User deleted successfully.');
     }
+
+    // Bulk update year levels for selected users
+    public function bulkUpdateYear(Request $request)
+    {
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+            'year_level' => 'required|string|in:1st Year,2nd Year,3rd Year,4th Year,Graduated',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            // Find all student profiles associated with the selected user IDs
+            // and update their year_level in a single query
+            \App\Models\StudentProfile::whereIn('user_id', $validated['user_ids'])
+                ->update(['year_level' => $validated['year_level']]);
+                
+            // Optional: If you want to automatically change status to "inactive" when they graduate
+            if ($validated['year_level'] === 'Graduated') {
+                 User::whereIn('id', $validated['user_ids'])->update(['status' => 'inactive']);
+            }
+        });
+
+        return back()->with('success', count($validated['user_ids']) . ' students successfully updated to ' . $validated['year_level'] . '.');
+    }
+
+    // Reset a user's password to the default
+    public function resetPassword(User $user)
+    {
+        $user->update([
+            'password' => Hash::make('P2PSys2026'),
+        ]);
+
+        return back()->with('success', "Password for {$user->fname} {$user->lname} has been reset to default.");
+    }
 }

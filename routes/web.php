@@ -53,7 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::patch('/profile/academic', [ProfileController::class, 'updateAcademic'])->name('profile.academic.update');
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-
+    // Forced Password Onboarding
+    Route::get('/force-password-change', [App\Http\Controllers\Auth\PasswordController::class, 'forceChange'])->name('password.force-change');
     // Mentor Action Routes
     Route::get('/mentor/requests', [MentorshipRequestController::class, 'mentorIndex'])->name('mentor.requests.index');
     Route::patch('/mentor/requests/{mentorshipRequest}/approve', [MentorshipRequestController::class, 'approve'])->name('mentor.requests.approve');
@@ -83,12 +84,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::patch('/notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
-    // Admin Routes (Corrected: Removed the duplicate closure)
+    // Admin Routes
     Route::middleware(EnsureUserIsAdmin::class)->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+        
+        // NEW: Bulk Action Route (Must be above /users/{user})
+        Route::patch('/users/bulk-year', [AdminController::class, 'bulkUpdateYear'])->name('admin.users.bulk_year');
+        
         Route::post('/users', [AdminController::class, 'store'])->name('admin.users.store'); 
         Route::patch('/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
+        Route::patch('/users/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('admin.users.reset_password');
         Route::get('/admin/skills', [SkillManagerController::class, 'index'])->name('admin.skills.index');
         Route::post('/admin/skills/categories', [SkillManagerController::class, 'storeCategory'])->name('admin.skills.categories.store');
         Route::post('/admin/skills/subjects', [SkillManagerController::class, 'storeSubject'])->name('admin.skills.subjects.store');
@@ -121,8 +127,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/admin/academic-status/programs/{id}', [AcademicStatusController::class, 'updateProgram'])->name('admin.academic.programs.update');
         Route::delete('/admin/academic-status/programs/{id}', [AcademicStatusController::class, 'destroyProgram'])->name('admin.academic.programs.destroy');
     });
-
-    //Route::post('/users', [AdminController::class, 'store'])->name('admin.users.store');
 
     // Student Dashboard Route
     Route::get('/student/dashboard', [StudentController::class, 'index'])
@@ -161,12 +165,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // --- Admin Application Routes ---
 Route::middleware(['auth', EnsureUserIsAdmin::class])->prefix('admin')->group(function () {
-    // ... existing admin routes ...
     Route::patch('/mentor-app/{application}/approve', [MentorApplicationController::class, 'approve'])->name('admin.mentor.approve');
     Route::patch('/mentor-app/{application}/reject', [MentorApplicationController::class, 'reject'])->name('admin.mentor.reject');
-    // MOVED HERE: Now it is fully secured by the Admin middleware!
     Route::get('/mentor-app/{application}', [MentorApplicationController::class, 'show'])->name('admin.mentor.show');
-
 });
 
 Route::get('/student/find-mentor', [StudentController::class, 'findMentors'])->name('student.find-mentor');

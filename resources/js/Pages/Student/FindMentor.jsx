@@ -13,6 +13,7 @@ import StarIcon from '@mui/icons-material/Star';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HistoryIcon from '@mui/icons-material/History'; // NEW: Imported History Icon
 
 export default function FindMentor({ auth, mentors, error }) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -145,7 +146,7 @@ export default function FindMentor({ auth, mentors, error }) {
                                                 </Box>
                                             </Box>
 
-                                            {/* UPDATED RATING BOX */}
+                                            {/* RATING BOX */}
                                             <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#fff8e1', px: 1, py: 0.5, borderRadius: 1 }}>
                                                 <StarIcon sx={{ color: '#ffc107', fontSize: 22, mr: 0.5 }} />
                                                 <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
@@ -165,6 +166,10 @@ export default function FindMentor({ auth, mentors, error }) {
                                             )}
                                             {mentor.mentorship_status === 'Approved' && (
                                                 <Chip label="My Mentor" size="small" color="success" icon={<CheckCircleIcon />} sx={{ height: 20, fontSize: '0.65rem' }} />
+                                            )}
+                                            {/* NEW: Previous Mentor Badge */}
+                                            {mentor.mentorship_status === 'Previous' && (
+                                                <Chip label="Previous Mentor" size="small" color="info" icon={<HistoryIcon />} sx={{ height: 20, fontSize: '0.65rem' }} />
                                             )}
                                         </Box>
 
@@ -215,7 +220,6 @@ export default function FindMentor({ auth, mentors, error }) {
                                             </Box>
                                         </Box>
 
-                                        {/* UPDATED: Route to Mentor Info Page */}
                                         <Button 
                                             component={Link}
                                             href={route('student.mentor.info', mentor.id)}

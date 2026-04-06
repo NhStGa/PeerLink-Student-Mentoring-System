@@ -49,6 +49,23 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        
+        if ($user->status !== 'active') {
+            // Immediately log them back out
+            Auth::logout(); 
+
+            // Throw an error back to the React frontend
+            throw ValidationException::withMessages([
+                'email' => 'Your account has been marked as ' . $user->status . ' and is no longer accessible. Please contact the administrator.',
+            ]);
+        }
+
+        // Check if they are using the default password
+        if ($this->password === 'P2PSys2026') {
+            session(['must_change_password' => true]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

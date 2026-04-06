@@ -13,6 +13,7 @@ import ReviewsIcon from '@mui/icons-material/Reviews';
 import EmailIcon from '@mui/icons-material/Email';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HistoryIcon from '@mui/icons-material/History'; // NEW: Imported History Icon
 
 // 1. IMPORT THE CAROUSEL COMPONENT
 import ImageCarouselModal from '@/Components/ImageCarouselModal';
@@ -106,13 +107,23 @@ export default function MentorInfo({ auth, mentor, reviews = [] }) {
                                     sx={{ width: '100%', py: 2.5, borderRadius: 2, fontSize: '1rem', fontWeight: 'bold' }} 
                                 />
                             ) : (
-                                <Button 
-                                    component={Link} href={route('student.mentorship.apply', mentor.id)}
-                                    variant="contained" size="large" fullWidth startIcon={<EmailIcon />} 
-                                    sx={{ textTransform: 'none', borderRadius: 2 }}
-                                >
-                                    Request Mentorship
-                                </Button>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    {/* NEW: Previous Mentor Badge displayed above the request button */}
+                                    {mentor.mentorship_status === 'Previous' && (
+                                        <Chip 
+                                            icon={<HistoryIcon />} label="Previous Mentor" color="info" 
+                                            sx={{ width: '100%', py: 2.5, borderRadius: 2, fontSize: '1rem', fontWeight: 'bold' }} 
+                                        />
+                                    )}
+                                    <Button 
+                                        component={Link} href={route('student.mentorship.apply', mentor.id)}
+                                        variant="contained" size="large" fullWidth startIcon={<EmailIcon />} 
+                                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                                    >
+                                        {/* UPDATED: Change button text if they are a previous mentor */}
+                                        {mentor.mentorship_status === 'Previous' ? 'Request Mentorship Again' : 'Request Mentorship'}
+                                    </Button>
+                                </Box>
                             )}
                         </Paper>
                     </Grid>
@@ -194,15 +205,14 @@ export default function MentorInfo({ auth, mentor, reviews = [] }) {
                                                     {review.images.slice(0, 3).map((img, idx) => (
                                                         <Box 
                                                             key={img.revimage_id} 
-                                                            // UPDATED: Made the box clickable to open the carousel
                                                             onClick={() => handleOpenCarousel(review.images, idx)}
                                                             sx={{ 
                                                                 position: 'relative', 
                                                                 width: 80, height: 80, 
                                                                 borderRadius: 2, overflow: 'hidden', 
                                                                 border: '1px solid #e2e8f0',
-                                                                cursor: 'pointer', // Show hand cursor
-                                                                '&:hover': { opacity: 0.8 } // Small hover effect
+                                                                cursor: 'pointer', 
+                                                                '&:hover': { opacity: 0.8 } 
                                                             }}
                                                         >
                                                             <img src={`/storage/${img.image_path}`} alt="review" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

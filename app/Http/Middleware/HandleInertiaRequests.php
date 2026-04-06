@@ -32,6 +32,15 @@ class HandleInertiaRequests extends Middleware
         // Define the $user variable first!
         $user = $request->user();
 
+        if ($user && $user->status !== 'active') {
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            // Redirect them to the login page
+            abort(redirect()->route('login')->with('error', 'Your session was terminated because your account is no longer active.'));
+        }
+        
         return [
             ...parent::share($request),
             'auth' => [

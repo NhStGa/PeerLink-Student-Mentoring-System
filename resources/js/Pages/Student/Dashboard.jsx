@@ -5,7 +5,7 @@ import {
     Grid, Card, Typography, Button, Container, Box, 
     List, ListItem, ListItemButton, ListItemAvatar, ListItemText, 
     Avatar, Divider, Dialog, DialogTitle, DialogContent, DialogActions, 
-    Chip, Stack, IconButton, Paper, Badge, // UPDATED: Imported Badge
+    Chip, Stack, IconButton, Paper, Badge, 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -25,7 +25,6 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MoreTimeIcon from '@mui/icons-material/MoreTime';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
-// UPDATED: Added pendingReviewsCount to props
 export default function StudentDashboard({ auth, activeMentors = [], mentorSchedules = [], upcomingSessions = [], pendingReviewsCount = 0 }) {
     
     // --- Mentor Profile Modal State ---
@@ -136,7 +135,6 @@ export default function StudentDashboard({ auth, activeMentors = [], mentorSched
                     <Grid size={{ xs: 12, md: 4 }}>
                         <Card sx={{ height: 350, display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc' }}>
-                                {/* UPDATED: Wrapped the link inside a Badge */}
                                 <Badge badgeContent={pendingReviewsCount} color="error" sx={{ '& .MuiBadge-badge': { right: -6, top: 4 } }}>
                                     <Link href={route('student.mentors.index')} style={{ textDecoration: 'none' }}>
                                         <Typography variant="h6" fontWeight="bold" color="primary.main" sx={{ '&:hover': { textDecoration: 'underline' }, cursor: 'pointer', pr: 1 }}>
@@ -576,8 +574,11 @@ export default function StudentDashboard({ auth, activeMentors = [], mentorSched
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                                            <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                                                No mentors are available on this date.
+                                            <Typography variant="body2" color="text.secondary" fontStyle="italic" sx={{ mb: 1 }}>
+                                                No regular schedules found for this date.
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                You can still click 'Book A Session Now' to send an Off-Schedule request!
                                             </Typography>
                                         </TableCell>
                                     </TableRow>
@@ -589,10 +590,11 @@ export default function StudentDashboard({ auth, activeMentors = [], mentorSched
 
                 <DialogActions sx={{ p: 2, bgcolor: '#fafafa', display: 'flex', justifyContent: 'flex-end' }}>
                     <Button 
-                        component={Link} href={route('student.sessions.create')}
+                        component={Link} 
+                        // Pass the selectedDate as a URL parameter
+                        href={route('student.sessions.create', { date: selectedDate })}
                         variant="contained" color="success" startIcon={<AddCircleOutlineIcon />} 
                         sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 'bold' }}
-                        disabled={selectedDateSchedules.length === 0}
                     >
                         Book A Session Now
                     </Button>

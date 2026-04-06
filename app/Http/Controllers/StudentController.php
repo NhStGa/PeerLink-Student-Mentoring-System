@@ -92,14 +92,19 @@ class StudentController extends Controller
             ]);
         }
 
-        // 2. NEW: Fetch BOTH pending requests and active relationships
+        // 2. Fetch pending requests, active relationships, AND previous relationships
         $pendingRequests = \App\Models\MentorshipRequest::where('student_id', $currentUser->id)
             ->where('status', 'Pending')
-            ->pluck('status', 'mentor_id'); // Returns [mentor_id => 'Pending']
+            ->pluck('status', 'mentor_id'); 
 
         $activeRelationships = \App\Models\MentorMenteeRelationship::where('student_id', $currentUser->id)
             ->where('status', 'Active')
-            ->pluck('status', 'mentor_id'); // Returns [mentor_id => 'Active']
+            ->pluck('status', 'mentor_id'); 
+
+        // NEW: Fetch past relationships
+        $previousRelationships = \App\Models\MentorMenteeRelationship::where('student_id', $currentUser->id)
+            ->whereIn('status', ['Terminated', 'Completed'])
+            ->pluck('status', 'mentor_id');
 
         // 3. Fetch Approved Mentors ONLY from the same department
         $mentors = User::where('role', 'mentor')
@@ -110,29 +115,30 @@ class StudentController extends Controller
             ->whereHas('studentProfile.program', function($q) use ($departmentId) {
                 $q->where('department_id', $departmentId);
             })
-            // FIXED: Added 'mentorProfile' here so the ratings are actually fetched!
             ->with(['mentorProfile', 'studentProfile.program', 'skillAssessments.skillSubject'])
             ->get();
 
         // 4. Format Data for Frontend
-        $formattedMentors = $mentors->map(function($user) use ($pendingRequests, $activeRelationships) {
+        $formattedMentors = $mentors->map(function($user) use ($pendingRequests, $activeRelationships, $previousRelationships) {
             
             $status = null;
             if ($activeRelationships->has($user->id)) {
                 $status = 'Approved';
             } elseif ($pendingRequests->has($user->id)) {
                 $status = 'Pending';
+            } elseif ($previousRelationships->has($user->id)) {
+                // NEW: Tag them as a previous mentor!
+                $status = 'Previous';
             }
 
             return [
                 'id' => $user->id,
-                'name' => $user->fname . ' ' . $user->lname,
+                'name' => $user->fname . ' ' . $user->mi . ' ' . $user->lname,
                 'email' => $user->email,
                 'program' => $user->studentProfile?->program?->code ?? 'N/A',
                 'year_level' => $user->studentProfile?->year_level ?? 'N/A',
                 'bio' => $user->studentProfile?->bio ?? 'No bio available.',
                 'mentorship_status' => $status,
-                // FIXED: Map the rating directly to the frontend
                 'my_rating' => $user->mentorProfile?->my_rating ?? 0.0, 
                 'avatar_url' => $user->avatar_url,
                 'skills' => $user->skillAssessments->map(function($assessment) {
@@ -177,16 +183,24 @@ class StudentController extends Controller
             ->get();
 
         // 3. Check current relationship status (so we know which button to show)
-        $relationshipStatus = \App\Models\MentorMenteeRelationship::where('student_id', $user->id)
+        $latestRelationship = \App\Models\MentorMenteeRelationship::where('student_id', $user->id)
             ->where('mentor_id', $mentor->id)
-            ->whereIn('status', ['Pending', 'Approved', 'Active'])
             ->latest()
-            ->value('status') ?? 'None';
+            ->first();
+
+        $relationshipStatus = 'None';
+        if ($latestRelationship) {
+            if (in_array($latestRelationship->status, ['Active', 'Approved', 'Pending'])) {
+                $relationshipStatus = $latestRelationship->status;
+            } elseif (in_array($latestRelationship->status, ['Completed', 'Terminated'])) {
+                $relationshipStatus = 'Previous';
+            }
+        }
 
         return \Inertia\Inertia::render('Student/MentorInfo', [
             'mentor' => [
                 'id' => $mentor->id,
-                'name' => $mentor->fname . ' ' . $mentor->lname,
+                'name' => $mentor->fname . ' ' . $mentor->mi . ' ' . $mentor->lname,
                 'program' => $mentor->studentProfile->program->name ?? 'N/A',
                 'year_level' => $mentor->studentProfile->year_level ?? 'N/A',
                 'bio' => $mentor->studentProfile->bio ?? 'No bio provided.',

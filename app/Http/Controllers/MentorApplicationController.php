@@ -138,12 +138,12 @@ class MentorApplicationController extends Controller
         // Eager load the user and their student profile
         $application->load('user.studentProfile.program');
         
-        // UPDATED: Eager load the skillSubject relationship from the database
+        // Eager load the skillSubject relationship from the database
         $assessments = \App\Models\SkillAssessment::where('user_id', $application->user_id)
             ->with('skillSubject')
             ->get();
 
-        // UPDATED: Map the skills using the loaded database relationship
+        // Map the skills using the loaded database relationship
         $applicantSkills = $assessments->map(function($assessment) {
             return [
                 'id' => $assessment->skill_id,
@@ -161,6 +161,7 @@ class MentorApplicationController extends Controller
                 'applicant' => [
                     'id' => $application->user->id,
                     'full_name' => $application->user->lname . ', ' . $application->user->fname . ($application->user->mi ? ' ' . $application->user->mi . '.' : ''),
+                    'avatar_url' => $application->user->avatar_url,
                     'email' => $application->user->email,
                     'student_number' => $application->user->studentProfile->student_number ?? 'N/A',
                     'year_level' => $application->user->studentProfile->year_level ?? 'N/A',

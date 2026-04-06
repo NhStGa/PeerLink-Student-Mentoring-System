@@ -75,7 +75,7 @@ export default function Login({ status, canResetPassword }) {
                             helperText={errors.password}
                         />
 
-                        {/* Forgot Password Link (Right Aligned) */}
+                        {/* Forgot Password Link (Right Aligned)
                         {canResetPassword && (
                             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                                 <Link href={route('password.request')} style={{ textDecoration: 'none' }}>
@@ -88,7 +88,7 @@ export default function Login({ status, canResetPassword }) {
                                     </Typography>
                                 </Link>
                             </Box>
-                        )}
+                        )} */}
 
                         {/* Login Button (Full Width) */}
                         <Button
