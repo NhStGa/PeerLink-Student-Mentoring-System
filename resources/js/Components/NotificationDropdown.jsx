@@ -106,7 +106,7 @@ export default function NotificationDropdown() {
                 anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
                 PaperProps={{
                     elevation: 4,
-                    sx: { width: 360, maxHeight: 500, mt: 1.5, borderRadius: 3 }
+                    sx: { width: 360, maxHeight: 500, mt: 5, borderRadius: 3 }
                 }}
             >
                 {/* Header */}

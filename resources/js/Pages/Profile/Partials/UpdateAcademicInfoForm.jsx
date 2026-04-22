@@ -4,7 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import { useForm } from '@inertiajs/react';
 import { Transition } from '@headlessui/react';
 
-export default function UpdateAcademicInfoForm({ studentProfile, className = '' }) {
+export default function UpdateAcademicInfoForm({ studentProfile }) {
     // Only handle Bio now
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
         bio: studentProfile?.bio || '',
@@ -16,7 +16,8 @@ export default function UpdateAcademicInfoForm({ studentProfile, className = '' 
     };
 
     return (
-        <section className={className}>
+        // UPDATED: Replaced the restrictive className prop with "w-full"
+        <section className="w-full">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">Profile Introduction</h2>
                 <p className="mt-1 text-sm text-gray-600">
@@ -27,12 +28,13 @@ export default function UpdateAcademicInfoForm({ studentProfile, className = '' 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 
                 {/* Bio / Profile Introduction */}
-                <div>
+                <div className="w-full">
                     <InputLabel htmlFor="bio" value="Bio" />
                     <textarea
                         id="bio"
+                        // UPDATED: Increased rows to 6 for a larger typing area
                         className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                        rows="4"
+                        rows="6"
                         placeholder="Tell us about yourself..."
                         value={data.bio}
                         onChange={(e) => setData('bio', e.target.value)}

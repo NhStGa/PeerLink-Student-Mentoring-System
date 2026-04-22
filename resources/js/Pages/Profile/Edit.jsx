@@ -2,7 +2,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateAcademicInfoForm from './Partials/UpdateAcademicInfoForm'; 
-// NEW: Added the missing import for the Profile Picture component!
 import UpdateProfilePicture from './Partials/UpdateProfilePicture'; 
 import { Head, Link } from '@inertiajs/react';
 import { Button, Container, Box, Typography, Paper } from '@mui/material';
@@ -15,7 +14,8 @@ export default function Edit({ auth, mustVerifyEmail, status, studentProfile }) 
         >
             <Head title="Profile Settings" />
 
-            <Container maxWidth="lg" sx={{ py: 3 }}>
+            {/* UPDATED: Changed maxWidth from "lg" to "md" to match the Profile view */}
+            <Container maxWidth="md" sx={{ py: 6 }}>
                 
                 {/* Header Section */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -36,7 +36,7 @@ export default function Edit({ auth, mustVerifyEmail, status, studentProfile }) 
 
                 <div className="space-y-6">
                     
-                    {/* NEW: Profile Picture Upload Component placed inside the flow */}
+                    {/* Profile Picture Upload Component placed inside the flow */}
                     <UpdateProfilePicture />
 
                     {/* 1. Profile Introduction (Bio Only) */}

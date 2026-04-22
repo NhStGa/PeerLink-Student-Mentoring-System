@@ -33,7 +33,7 @@ export default function Login({ status, canResetPassword }) {
             <Head title="Log in" />
 
             <Container component="main" maxWidth="xs">
-                <Paper elevation={3} sx={{ mt: 8, p: 4 }}>
+                <Paper elevation={3} sx={{ mt: 1, p: 4, borderRadius: 3 }}>
                     <Typography component="h1" variant="h5" align="center" gutterBottom>
                         Sign in to Student Peer Mentoring
                     </Typography>
@@ -75,7 +75,7 @@ export default function Login({ status, canResetPassword }) {
                             helperText={errors.password}
                         />
 
-                        {/* Forgot Password Link (Right Aligned)
+                        {/* Forgot Password Link (Right Aligned) */}
                         {canResetPassword && (
                             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                                 <Link href={route('password.request')} style={{ textDecoration: 'none' }}>
@@ -88,7 +88,7 @@ export default function Login({ status, canResetPassword }) {
                                     </Typography>
                                 </Link>
                             </Box>
-                        )} */}
+                        )}
 
                         {/* Login Button (Full Width) */}
                         <Button

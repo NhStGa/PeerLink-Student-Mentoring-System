@@ -17,7 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import GroupIcon from '@mui/icons-material/Group';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SchoolIcon from '@mui/icons-material/School';
-import LockResetIcon from '@mui/icons-material/LockReset'; // NEW: Imported LockReset icon
+import LockResetIcon from '@mui/icons-material/LockReset';
 
 export default function AdminDashboard({ auth, users, pendingApplications = [], departments = [] }) {
     // Modal States
@@ -26,7 +26,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     const [editingUserId, setEditingUserId] = useState(null);
     const [userToDelete, setUserToDelete] = useState(null);
     
-    // NEW: Reset Password State
+    // Reset Password State
     const [userToReset, setUserToReset] = useState(null);
 
     // Bulk Update & Quick Select States
@@ -160,7 +160,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
         });
     };
 
-    // NEW: Handle Password Reset
+    // Handle Password Reset
     const confirmResetPassword = () => {
         router.patch(route('admin.users.reset_password', userToReset.id), {}, {
             onSuccess: () => setUserToReset(null),
@@ -181,7 +181,8 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
         <AuthenticatedLayout user={auth.user}>
             <Head title="Admin Dashboard" />
 
-            <Container maxWidth="xl" sx={{ height: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 3 }}>
+            {/* UPDATED: Changed height to minHeight so it doesn't squish the content */}
+            <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 3 }}>
                 
                 {/* SECTION 1: Pending Applications */}
                 <Paper sx={{ width: '100%', mb: 3, p: 2, borderLeft: '6px solid #ed6c02', flexShrink: 0 }}>
@@ -249,7 +250,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                     </Grid>
 
                     <Grid item xs={12} md={4}>
-                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #2e7d32' }}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', textAlign: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #2e7d32' }}>
                             <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 2, display: 'flex', mr: 2 }}>
                                 <VerifiedUserIcon color="success" fontSize="large" />
                             </Box>
@@ -265,7 +266,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                     </Grid>
 
                     <Grid item xs={12} md={4}>
-                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #9c27b0' }}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', textAlign: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #9c27b0' }}>
                             <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, display: 'flex', mr: 2 }}>
                                 <SchoolIcon color="secondary" fontSize="large" />
                             </Box>
@@ -282,7 +283,8 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                 </Grid>
 
                 {/* SECTION 2: Master User List */}
-                <Paper sx={{ width: '100%', flex: 1, overflow: 'hidden', p: 3, display: 'flex', flexDirection: 'column' }}>
+                {/* UPDATED: Increased minHeight to 750px */}
+                <Paper sx={{ width: '100%', minHeight: '750px', flex: 1, overflow: 'hidden', p: 3, display: 'flex', flexDirection: 'column'}}>
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                         <Typography variant="h6" component="div" fontWeight="bold">Master User List</Typography>
@@ -440,7 +442,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                         </TableCell>
                                         <TableCell align="right">
                                             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                                                {/* NEW: Reset Password Button */}
+                                                {/* Reset Password Button */}
                                                 <Tooltip title="Reset Password to Default">
                                                     <IconButton size="small" color="warning" onClick={() => setUserToReset(user)}>
                                                         <LockResetIcon fontSize="small" />
@@ -557,7 +559,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                 </form>
             </Dialog>
 
-            {/* NEW: RESET PASSWORD CONFIRMATION MODAL */}
+            {/* RESET PASSWORD CONFIRMATION MODAL */}
             <Dialog open={!!userToReset} onClose={() => setUserToReset(null)} maxWidth="xs" fullWidth>
                 <DialogTitle fontWeight="bold" color="warning.main">Reset Password?</DialogTitle>
                 <DialogContent>

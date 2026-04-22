@@ -67,9 +67,12 @@ export default function AuthenticatedLayout({ user, header, children }) {
 
     const drawer = (
         <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" sx={{ my: 2 }}>
-                Student Mentoring
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', my: 2, gap: 1 }}>
+                <GroupsIcon color="primary" />
+                <Typography variant="h6" fontWeight="bold" color="primary.main">
+                    Mentoring
+                </Typography>
+            </Box>
             <Divider />
             <List>
                 {navItems.map((item) => (
@@ -92,18 +95,21 @@ export default function AuthenticatedLayout({ user, header, children }) {
             <AppBar position="static">
                 <Container maxWidth="xl">
                     <Toolbar disableGutters>
-                        {/* Mobile menu icon */}
-                        <IconButton
-                            color="inherit"
-                            aria-label="open drawer"
-                            edge="start"
-                            onClick={handleDrawerToggle}
-                            sx={{ mr: 2, display: { sm: 'none' } }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
+                        
+                        {/* Mobile menu icon (Hidden on Desktop) */}
+                        <Box sx={{ display: { xs: 'flex', sm: 'none' } }}>
+                            <IconButton
+                                color="inherit"
+                                aria-label="open drawer"
+                                edge="start"
+                                onClick={handleDrawerToggle}
+                                sx={{ mr: 1 }}
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                        </Box>
 
-                        {/* Logo */}
+                        {/* Desktop Logo & Title (Hidden on Mobile) */}
                         <GroupsIcon sx={{ display: { xs: 'none', sm: 'flex' }, mr: 1 }} />
                         <Typography
                             variant="h6"
@@ -121,8 +127,27 @@ export default function AuthenticatedLayout({ user, header, children }) {
                             Student Mentoring
                         </Typography>
 
-                        {/* Desktop Navigation */}
-                        {/* Flex-end pushes items to the right, creating the [Dashboard] [Skills] [User] layout */}
+                        {/* Mobile Logo & Title (Hidden on Desktop) */}
+                        <GroupsIcon sx={{ display: { xs: 'flex', sm: 'none' }, mr: 1 }} />
+                        <Typography
+                            variant="h6"
+                            noWrap
+                            component={Link}
+                            href={route('dashboard')}
+                            sx={{
+                                mr: 2,
+                                display: { xs: 'flex', sm: 'none' },
+                                flexGrow: 1, // This pushes the right-side icons to the edge!
+                                fontWeight: 700,
+                                color: 'inherit',
+                                textDecoration: 'none',
+                                fontSize: { xs: '1.1rem' } // Slightly smaller text to prevent squeezing
+                            }}
+                        >
+                            Mentoring
+                        </Typography>
+
+                        {/* Desktop Navigation Links */}
                         <Box 
                             sx={{ 
                                 flexGrow: 1, 
@@ -136,7 +161,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                                     key={item.name}
                                     component={Link}
                                     href={route(item.href)}
-                                    sx={{ my: 2, color: 'white', display: 'block', ml: 2 }}
+                                    sx={{ my: 2, color: 'white', display: 'block', ml: 2, fontWeight: 'bold' }}
                                 >
                                     {item.name}
                                 </Button>
@@ -146,16 +171,16 @@ export default function AuthenticatedLayout({ user, header, children }) {
                         {/* Right Side Icons: Notifications & User Profile */}
                         <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center' }}>
                             
-                            {/* NEW: Inserted the Notification Dropdown Here! */}
+                            {/* Inserted the Notification Dropdown Here! */}
                             <NotificationDropdown />
 
                             {/* User Menu */}
                             <Tooltip title="Open settings">
-                                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, ml: 2 }}>
+                                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, ml: { xs: 1, sm: 2 } }}>
                                     <Avatar 
                                         src={user.avatar_url} 
                                         alt={user.fname} 
-                                        sx={{ bgcolor: 'secondary.main' }}
+                                        sx={{ bgcolor: 'secondary.main', width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 } }}
                                     >
                                         {user.fname ? user.fname.charAt(0).toUpperCase() : 'U'}
                                     </Avatar>

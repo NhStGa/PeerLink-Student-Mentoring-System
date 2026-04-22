@@ -17,17 +17,28 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
+    // Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    //     ->name('password.request');
+
+    // Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+    //     ->name('password.email');
+
+    // Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    //     ->name('password.reset');
+
+    // Route::post('reset-password', [NewPasswordController::class, 'store'])
+    //     ->name('password.store');
+
+    // Keeps the GET route to load the React page
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->name('password.email');
+    // NEW: Our Custom POST routes for Verification and Reset
+    Route::post('forgot-password/verify', [App\Http\Controllers\Auth\CustomPasswordResetController::class, 'verify'])
+        ->name('password.verify');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
-        ->name('password.reset');
-
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->name('password.store');
+    Route::post('forgot-password/reset', [App\Http\Controllers\Auth\CustomPasswordResetController::class, 'reset'])
+        ->name('password.custom_reset');
 });
 
 Route::middleware('auth')->group(function () {
