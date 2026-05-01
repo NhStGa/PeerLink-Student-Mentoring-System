@@ -182,7 +182,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
             <Head title="Admin Dashboard" />
 
             {/* UPDATED: Changed height to minHeight so it doesn't squish the content */}
-            <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 3 }}>
+            <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 2 }}>
                 
                 {/* SECTION 1: Pending Applications */}
                 <Paper sx={{ width: '100%', mb: 3, p: 2, borderLeft: '6px solid #ed6c02', flexShrink: 0 }}>

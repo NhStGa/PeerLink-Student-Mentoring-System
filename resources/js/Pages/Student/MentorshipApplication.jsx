@@ -22,7 +22,7 @@ export default function MentorshipApplication({ auth, mentor }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title={`Apply to Mentor: ${mentor.name}`} />
 
-            <Container maxWidth="md" sx={{ py: 6 }}>
+            <Container maxWidth="md" sx={{ py: 2 }}>
                 
                 <Box sx={{ mb: 3 }}>
                     <Link href={route('student.find-mentor')}>

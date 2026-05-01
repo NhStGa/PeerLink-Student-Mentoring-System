@@ -71,7 +71,7 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Create Booking Schedule" />
 
-            <Container maxWidth="xl" sx={{ py: 6 }}>
+            <Container maxWidth="xl" sx={{ py: 2 }}>
                 
                 <Box sx={{ mb: 4 }}>
                     <Link href={route('mentor.dashboard')}>

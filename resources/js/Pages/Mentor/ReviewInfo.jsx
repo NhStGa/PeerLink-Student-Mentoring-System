@@ -73,7 +73,7 @@ export default function ReviewInfo({ auth, review, pastSessions = [] }) {
                 initialIndex={activeIndex} 
             />
 
-            <Container maxWidth="md" sx={{ py: 6, minHeight: '100vh' }}>
+            <Container maxWidth="md" sx={{ py: 2, minHeight: '100vh' }}>
                 
                 <Box sx={{ mb: 4 }}>
                     <Link href={route('mentor.mentees.index')}>

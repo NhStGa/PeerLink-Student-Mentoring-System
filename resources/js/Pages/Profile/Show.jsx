@@ -61,7 +61,7 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                     minHeight: '110vh', 
                     display: 'flex',
                     flexDirection: 'column',
-                    py: 6 
+                    py: 2 
                 }}
             >
                 {/* UPDATED CARD STYLING: Removed overflowY to allow natural growing */}

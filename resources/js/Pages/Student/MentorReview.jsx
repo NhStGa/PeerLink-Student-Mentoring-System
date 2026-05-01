@@ -152,7 +152,7 @@ export default function MentorReview({ auth, mentor, relationshipId, relationshi
                 initialIndex={activeIndex} 
             />
 
-            <Container maxWidth="md" sx={{ py: 6 }}>
+            <Container maxWidth="md" sx={{ py: 2 }}>
                 
                 <Box sx={{ mb: 4 }}>
                     <Link href={backUrl}>

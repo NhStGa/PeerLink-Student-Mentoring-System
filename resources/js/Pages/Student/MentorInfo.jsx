@@ -52,7 +52,7 @@ export default function MentorInfo({ auth, mentor, reviews = [] }) {
                 initialIndex={activeIndex} 
             />
 
-            <Container maxWidth="lg" sx={{ py: 6 }}>
+            <Container maxWidth="lg" sx={{ py: 2 }}>
                 
                 {/* Back Navigation */}
                 <Box sx={{ mb: 4 }}>

@@ -19,7 +19,7 @@ export default function Apply({ auth }) {
         >
             <Head title="Apply for Mentor" />
 
-            <Container maxWidth="md" sx={{ py: 6 }}>
+            <Container maxWidth="md" sx={{ py: 2 }}>
                 <Paper sx={{ p: 4 }}>
                     <Typography variant="h5" gutterBottom>
                         Apply to be a Peer Mentor

@@ -54,7 +54,7 @@ export default function FindMentor({ auth, mentors, error }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Find a Mentor" />
 
-            <Container maxWidth="xl" sx={{ py: 4 }}>
+            <Container maxWidth="xl" sx={{ py: 2 }}>
                 
                 {/* BACK BUTTON */}
                 <Box sx={{ mb: 2 }}>

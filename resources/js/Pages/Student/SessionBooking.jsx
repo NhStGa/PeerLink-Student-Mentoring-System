@@ -5,7 +5,7 @@ import {
     Container, Box, Typography, Paper, TextField, Button, 
     Stack, Grid, MenuItem, FormControl, InputLabel, Select, 
     FormHelperText, Radio, RadioGroup, FormControlLabel, Divider,
-    IconButton, Chip, Checkbox, Alert
+    IconButton, Chip, Checkbox, Alert, Autocomplete 
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
@@ -136,52 +136,76 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
 
                                 <Stack spacing={4}>
 
-                                    <FormControl fullWidth error={!!errors.mentor_id}>
-                                        <InputLabel>Select Your Mentor</InputLabel>
-                                        <Select
-                                            value={data.mentor_id}
-                                            label="Select Your Mentor"
-                                            onChange={(e) => {
-                                                setData(prev => ({ 
-                                                    ...prev, 
-                                                    mentor_id: e.target.value,
-                                                    availability_id: '',
-                                                    is_custom: false,
-                                                    start_time: '',
-                                                    end_time: ''
-                                                }));
-                                            }}
-                                            sx={{ borderRadius: 2, bgcolor: '#f8fafc' }}
-                                        >
-                                            {relationships.map((rel) => (
-                                                <MenuItem key={rel.mentor_id} value={rel.mentor_id}>
-                                                    {rel.mentor?.fname} {rel.mentor?.lname}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                        {errors.mentor_id ? <FormHelperText>{errors.mentor_id}</FormHelperText> : <FormHelperText>Select a mentor to view their available schedule.</FormHelperText>}
-                                    </FormControl>
+                                    <Autocomplete
+                                        options={relationships}
+                                        getOptionLabel={(option) => `${option.mentor?.fname} ${option.mentor?.lname}`}
+                                        value={relationships.find(r => r.mentor_id === data.mentor_id) || null}
+                                        // UPDATED: Added ListboxProps to limit height
+                                        ListboxProps={{ sx: { maxHeight: 250 } }}
+                                        onChange={(event, newValue) => {
+                                            setData(prev => ({ 
+                                                ...prev, 
+                                                mentor_id: newValue ? newValue.mentor_id : '',
+                                                availability_id: '',
+                                                is_custom: false,
+                                                start_time: '',
+                                                end_time: ''
+                                            }));
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField 
+                                                {...params} 
+                                                label="Search Your Mentor..." 
+                                                error={!!errors.mentor_id}
+                                                helperText={errors.mentor_id || "Type a name to search or select from the list."}
+                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8fafc' } }}
+                                            />
+                                        )}
+                                    />
 
                                     <TextField fullWidth label="Topic Title" placeholder="e.g., Help with Database Normalization" value={data.topic_title} onChange={(e) => setData('topic_title', e.target.value)} error={!!errors.topic_title} helperText={errors.topic_title} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
 
                                     <TextField fullWidth multiline rows={4} label="Topic Description" placeholder="Briefly describe what you want to achieve or struggle with..." value={data.topic_description} onChange={(e) => setData('topic_description', e.target.value)} error={!!errors.topic_description} helperText={errors.topic_description} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
 
                                     <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-                                        <FormControl fullWidth error={!!errors.skill_id}>
-                                            <InputLabel>Related Skill</InputLabel>
-                                            <Select value={data.skill_id} label="Related Skill" onChange={(e) => setData('skill_id', e.target.value)} sx={{ borderRadius: 2 }}>
-                                                {skills.map((skill) => (<MenuItem key={skill.skill_id} value={skill.skill_id}>{skill.skill_name}</MenuItem>))}
-                                            </Select>
-                                            {errors.skill_id && <FormHelperText>{errors.skill_id}</FormHelperText>}
-                                        </FormControl>
+                                        
+                                        <Autocomplete
+                                            fullWidth
+                                            options={skills}
+                                            getOptionLabel={(option) => option.skill_name}
+                                            value={skills.find(s => s.skill_id === data.skill_id) || null}
+                                            // UPDATED: Added ListboxProps to limit height
+                                            ListboxProps={{ sx: { maxHeight: 250 } }}
+                                            onChange={(event, newValue) => setData('skill_id', newValue ? newValue.skill_id : '')}
+                                            renderInput={(params) => (
+                                                <TextField 
+                                                    {...params} 
+                                                    label="Search Related Skill..." 
+                                                    error={!!errors.skill_id}
+                                                    helperText={errors.skill_id}
+                                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                                                />
+                                            )}
+                                        />
 
-                                        <FormControl fullWidth error={!!errors.location}>
-                                            <InputLabel>Location</InputLabel>
-                                            <Select value={data.location} label="Location" onChange={(e) => setData('location', e.target.value)} sx={{ borderRadius: 2 }}>
-                                                {locations.map((loc) => (<MenuItem key={loc} value={loc}>{loc}</MenuItem>))}
-                                            </Select>
-                                            {errors.location && <FormHelperText>{errors.location}</FormHelperText>}
-                                        </FormControl>
+                                        <Autocomplete
+                                            fullWidth
+                                            options={locations}
+                                            value={data.location || null}
+                                            // UPDATED: Added ListboxProps to limit height
+                                            ListboxProps={{ sx: { maxHeight: 250 } }}
+                                            onChange={(event, newValue) => setData('location', newValue || '')}
+                                            renderInput={(params) => (
+                                                <TextField 
+                                                    {...params} 
+                                                    label="Search Location..." 
+                                                    error={!!errors.location}
+                                                    helperText={errors.location}
+                                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                                                />
+                                            )}
+                                        />
+
                                     </Box>
 
                                     <Divider sx={{ my: 1 }} />

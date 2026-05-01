@@ -118,7 +118,7 @@ export default function StudentDashboard({ auth, activeMentors = [], mentorSched
         <AuthenticatedLayout user={auth.user}>
             <Head title="Student Dashboard" />
 
-            <Container maxWidth="xl" sx={{ py: 4 }}>
+            <Container maxWidth="xl" sx={{ py: 2 }}>
                 
                 <Box sx={{ mb: 4 }}>
                     <Typography variant="h4" fontWeight="bold" gutterBottom>

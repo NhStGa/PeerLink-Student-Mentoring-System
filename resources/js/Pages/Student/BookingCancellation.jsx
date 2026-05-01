@@ -39,7 +39,7 @@ export default function BookingCancellation({ auth, mentoringSession }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Cancel Session" />
 
-            <Container maxWidth="md" sx={{ py: 6 }}>
+            <Container maxWidth="md" sx={{ py: 2 }}>
                 
                 <Box sx={{ mb: 4 }}>
                     <Link href={route('student.dashboard')}>

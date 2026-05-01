@@ -42,7 +42,7 @@ export default function AllSessions({ auth, sessions = [] }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="All Mentor Sessions" />
 
-            <Container maxWidth="xl" sx={{ pt: 3, pb: 6, height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
+            <Container maxWidth="xl" sx={{ pt: 2, pb: 6, height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
                 
                 {/* Header */}
                 <Box sx={{ mb: 4 }}>

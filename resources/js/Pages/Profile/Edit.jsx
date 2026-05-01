@@ -15,7 +15,7 @@ export default function Edit({ auth, mustVerifyEmail, status, studentProfile }) 
             <Head title="Profile Settings" />
 
             {/* UPDATED: Changed maxWidth from "lg" to "md" to match the Profile view */}
-            <Container maxWidth="md" sx={{ py: 6 }}>
+            <Container maxWidth="md" sx={{ py: 2 }}>
                 
                 {/* Header Section */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>

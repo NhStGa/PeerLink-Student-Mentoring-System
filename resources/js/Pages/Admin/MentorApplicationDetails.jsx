@@ -50,7 +50,7 @@ export default function MentorApplicationDetails({ auth, application }) {
                     height: 'calc(100vh - 112px)', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    py: 3 
+                    py: 2 
                 }}
             >
                 <Paper 

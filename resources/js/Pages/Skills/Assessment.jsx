@@ -72,7 +72,7 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                     height: 'calc(100vh - 112px)', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    py: 3 
+                    py: 2 
                 }}
             >
                 <Grid container spacing={3} sx={{ height: '100%', flexWrap: 'nowrap' }}> 

@@ -69,8 +69,9 @@ export default function AuthenticatedLayout({ user, header, children }) {
         <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', my: 2, gap: 1 }}>
                 <GroupsIcon color="primary" />
+                {/* UPDATED: Changed from Mentoring to Student Mentoring */}
                 <Typography variant="h6" fontWeight="bold" color="primary.main">
-                    Mentoring
+                    Student Mentoring
                 </Typography>
             </Box>
             <Divider />
@@ -127,25 +128,9 @@ export default function AuthenticatedLayout({ user, header, children }) {
                             Student Mentoring
                         </Typography>
 
-                        {/* Mobile Logo & Title (Hidden on Desktop) */}
-                        <GroupsIcon sx={{ display: { xs: 'flex', sm: 'none' }, mr: 1 }} />
-                        <Typography
-                            variant="h6"
-                            noWrap
-                            component={Link}
-                            href={route('dashboard')}
-                            sx={{
-                                mr: 2,
-                                display: { xs: 'flex', sm: 'none' },
-                                flexGrow: 1, // This pushes the right-side icons to the edge!
-                                fontWeight: 700,
-                                color: 'inherit',
-                                textDecoration: 'none',
-                                fontSize: { xs: '1.1rem' } // Slightly smaller text to prevent squeezing
-                            }}
-                        >
-                            Mentoring
-                        </Typography>
+                        {/* UPDATED: Removed the Mobile Title/Logo completely and replaced it with a flex spacer */}
+                        {/* This pushes the notification and profile icons to the right on mobile screens! */}
+                        <Box sx={{ flexGrow: 1, display: { xs: 'flex', sm: 'none' } }} />
 
                         {/* Desktop Navigation Links */}
                         <Box 
@@ -263,7 +248,8 @@ export default function AuthenticatedLayout({ user, header, children }) {
             )}
 
             {/* Main Content */}
-            <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', py: 3 }}>
+            {/* UPDATED: Forced p: 0 to eliminate any layout-level padding */}
+            <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 0 }}>
                 {children}
             </Box>
         </Box>

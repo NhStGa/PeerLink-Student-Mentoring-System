@@ -151,7 +151,7 @@ export default function ManageSkills({ auth, categories }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="Manage Skills" />
 
-            <Container maxWidth="xl" sx={{ height: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 3 }}>
+            <Container maxWidth="xl" sx={{ height: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 2 }}>
                 <Box sx={{ mb: 3 }}>
                     <Box sx={{ mb: 1 }}>
                         <Link href={route('dashboard')}>

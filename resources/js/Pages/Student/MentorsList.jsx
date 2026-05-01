@@ -129,7 +129,7 @@ export default function MentorsList({ auth, activeMentors = [], previousMentors 
         <AuthenticatedLayout user={auth.user}>
             <Head title="My Mentors" />
 
-            <Container maxWidth="xl" sx={{ py: 6, minHeight: '100vh' }}>
+            <Container maxWidth="xl" sx={{ py: 2, minHeight: '100vh' }}>
                 
                 {/* Header */}
                 <Box sx={{ mb: 6 }}>
