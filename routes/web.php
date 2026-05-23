@@ -90,7 +90,8 @@ Route::middleware('auth')->group(function () {
         
         // NEW: Bulk Action Route (Must be above /users/{user})
         Route::patch('/users/bulk-year', [AdminController::class, 'bulkUpdateYear'])->name('admin.users.bulk_year');
-        
+        Route::post('/users/bulk-preview', [AdminController::class, 'previewBulk'])->name('admin.users.bulk_preview');
+        Route::post('/users/bulk-store', [AdminController::class, 'storeBulk'])->name('admin.users.bulk_store');
         Route::post('/users', [AdminController::class, 'store'])->name('admin.users.store'); 
         Route::patch('/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');

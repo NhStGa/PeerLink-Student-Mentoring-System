@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import axios from 'axios';
 import { 
     Table, TableBody, TableCell, TableContainer, 
     TableHead, TableRow, Paper, Select, MenuItem, 
@@ -9,7 +10,7 @@ import {
     InputLabel, Container, Stack, Alert, IconButton, 
     DialogContentText, Checkbox, Box, 
     Menu, Divider, InputBase, Grid, Card, Tooltip,
-    Autocomplete // NEW: Imported Autocomplete
+    Autocomplete 
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,8 +20,8 @@ import GroupIcon from '@mui/icons-material/Group';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SchoolIcon from '@mui/icons-material/School';
 import LockResetIcon from '@mui/icons-material/LockReset';
-import PersonIcon from '@mui/icons-material/Person'; // NEW: Icon for Students
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; // NEW: Icon for Admins
+import PersonIcon from '@mui/icons-material/Person'; 
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; 
 
 export default function AdminDashboard({ auth, users, pendingApplications = [], departments = [] }) {
     // Modal States
@@ -31,6 +32,12 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     
     // Reset Password State
     const [userToReset, setUserToReset] = useState(null);
+
+    // Bulk Import States
+    const [openBulkModal, setOpenBulkModal] = useState(false);
+    const [previewData, setPreviewData] = useState([]);
+    const [skippedCount, setSkippedCount] = useState(0); // NEW: Track skipped duplicates
+    const [isUploading, setIsUploading] = useState(false);
 
     // Bulk Update & Quick Select States
     const [selectedUserIds, setSelectedUserIds] = useState([]);
@@ -49,11 +56,9 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     const totalUsers = users.length;
     const totalActive = users.filter(u => u.status.toLowerCase() === 'active').length;
     const totalMentors = users.filter(u => u.role.toLowerCase() === 'mentor').length;
-    // NEW: Added Student and Admin counters
     const totalStudents = users.filter(u => u.role.toLowerCase() === 'student').length;
     const totalAdmins = users.filter(u => u.role.toLowerCase() === 'admin').length;
 
-    // --- Format Programs for Autocomplete ---
     const programOptions = departments.flatMap(dept => 
         (dept.programs || []).map(prog => ({
             ...prog,
@@ -63,38 +68,24 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
         }))
     );
 
-    // --- Real-time Search Filter ---
     const filteredUsers = users.filter(user => {
         const query = searchQuery.toLowerCase();
-        
-        const fullName = (user.full_name || '').toLowerCase();
-        const email = (user.email || '').toLowerCase();
-        const studentNo = (user.student_number || '').toLowerCase();
-        const program = (user.program_code || '').toLowerCase();
-        const year = (user.year_level || '').toLowerCase();
-        const role = (user.role || '').toLowerCase();
-        const mentorStatus = (user.is_approved || '').toLowerCase();
-        const accountStatus = (user.account_status || '').toLowerCase();
-
         return (
-            fullName.includes(query) ||
-            email.includes(query) ||
-            studentNo.includes(query) ||
-            program.includes(query) ||
-            year.includes(query) ||
-            role.includes(query) ||
-            mentorStatus.includes(query) ||
-            accountStatus.includes(query)
+            (user.full_name || '').toLowerCase().includes(query) ||
+            (user.email || '').toLowerCase().includes(query) ||
+            (user.student_number || '').toLowerCase().includes(query) ||
+            (user.program_code || '').toLowerCase().includes(query) ||
+            (user.year_level || '').toLowerCase().includes(query) ||
+            (user.role || '').toLowerCase().includes(query) ||
+            (user.is_approved || '').toLowerCase().includes(query) ||
+            (user.account_status || '').toLowerCase().includes(query)
         );
     });
 
-    // --- Bulk Selection Handlers ---
     const handleSelectAll = (event) => {
         const visibleIds = filteredUsers.map(u => u.id);
-        
         if (event.target.checked) {
-            const newSelections = Array.from(new Set([...selectedUserIds, ...visibleIds]));
-            setSelectedUserIds(newSelections);
+            setSelectedUserIds(Array.from(new Set([...selectedUserIds, ...visibleIds])));
         } else {
             setSelectedUserIds(selectedUserIds.filter(id => !visibleIds.includes(id)));
         }
@@ -110,56 +101,66 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
 
     const handleQuickSelect = (yearLevel) => {
         const idsToSelect = filteredUsers.filter(u => u.year_level === yearLevel).map(u => u.id);
-        const newSelections = Array.from(new Set([...selectedUserIds, ...idsToSelect]));
-        setSelectedUserIds(newSelections);
+        setSelectedUserIds(Array.from(new Set([...selectedUserIds, ...idsToSelect])));
         setQuickSelectAnchor(null); 
     };
 
     const handleBulkUpdate = () => {
         if (!bulkYearLevel || selectedUserIds.length === 0) return;
+        router.patch(route('admin.users.bulk_year'), { user_ids: selectedUserIds, year_level: bulkYearLevel }, {
+            onSuccess: () => { setSelectedUserIds([]); setBulkYearLevel(''); }
+        });
+    };
+
+    // --- Bulk Upload Handlers ---
+    const handleBulkUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
         
-        router.patch(route('admin.users.bulk_year'), {
-            user_ids: selectedUserIds,
-            year_level: bulkYearLevel
-        }, {
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post(route('admin.users.bulk_preview'), formData);
+            setPreviewData(response.data.preview_data);
+            setSkippedCount(response.data.skipped_count || 0); // Store skipped count
+            setIsUploading(false);
+            e.target.value = null; 
+        } catch (error) {
+            alert(error.response?.data?.message || "Failed to parse file. Please check the format.");
+            setIsUploading(false);
+            e.target.value = null;
+        }
+    };
+
+    const confirmBulkStore = () => {
+        const validUsers = previewData.filter(u => u.status === 'Ready');
+        router.post(route('admin.users.bulk_store'), { users: validUsers }, {
             onSuccess: () => {
-                setSelectedUserIds([]); 
-                setBulkYearLevel('');
+                setOpenBulkModal(false);
+                setPreviewData([]);
+                setSkippedCount(0);
             }
         });
     };
 
     // --- Modal Handlers ---
     const handleOpenCreate = () => {
-        clearErrors();
-        reset();
-        setIsEditMode(false);
-        setEditingUserId(null);
-        setOpenModal(true);
+        clearErrors(); reset(); setIsEditMode(false); setEditingUserId(null); setOpenModal(true);
     };
 
     const handleOpenEdit = (user) => {
-        clearErrors();
-        setIsEditMode(true);
-        setEditingUserId(user.id);
+        clearErrors(); setIsEditMode(true); setEditingUserId(user.id);
         setData({
-            fname: user.fname || '',
-            lname: user.lname || '',
-            mi: user.mi || '',
-            email: user.email || '',
-            student_number: user.student_number || '',
-            year_level: user.year_level || '',
-            program_id: user.program_id || '',
-            role: user.role || 'student',
-            status: user.status || 'active'
+            fname: user.fname || '', lname: user.lname || '', mi: user.mi || '', email: user.email || '',
+            student_number: user.student_number || '', year_level: user.year_level || '', program_id: user.program_id || '',
+            role: user.role || 'student', status: user.status || 'active'
         });
         setOpenModal(true);
     };
 
-    const handleCloseModal = () => {
-        setOpenModal(false);
-        reset();
-    };
+    const handleCloseModal = () => { setOpenModal(false); reset(); };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -171,16 +172,11 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     };
 
     const confirmDelete = () => {
-        router.delete(route('admin.users.destroy', userToDelete.id), {
-            onSuccess: () => setUserToDelete(null),
-        });
+        router.delete(route('admin.users.destroy', userToDelete.id), { onSuccess: () => setUserToDelete(null) });
     };
 
-    // Handle Password Reset
     const confirmResetPassword = () => {
-        router.patch(route('admin.users.reset_password', userToReset.id), {}, {
-            onSuccess: () => setUserToReset(null),
-        });
+        router.patch(route('admin.users.reset_password', userToReset.id), {}, { onSuccess: () => setUserToReset(null) });
     };
 
     const getStatusColor = (status) => {
@@ -199,98 +195,58 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
 
             <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 4 }}>
                 
-                {/* System Overview Counter Cards */}
+                {/* Counter Cards */}
                 <Grid container spacing={3} sx={{ mb: 3, flexShrink: 0, margin: 'auto', paddingBottom: '20px' }}>
-                    
                     <Grid item xs={12} sm={6} md={4}>
                         <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #1976d2' }}>
-                            <Box sx={{ p: 2, bgcolor: '#e3f2fd', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <GroupIcon color="primary" fontSize="large" />
-                            </Box>
+                            <Box sx={{ p: 2, bgcolor: '#e3f2fd', borderRadius: 2, display: 'flex', mr: 2 }}><GroupIcon color="primary" fontSize="large" /></Box>
                             <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Total User Accounts
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" color="primary.dark">
-                                    {totalUsers}
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">Total User Accounts</Typography>
+                                <Typography variant="h4" fontWeight="bold" color="primary.dark">{totalUsers}</Typography>
                             </Box>
                         </Card>
                     </Grid>
-
                     <Grid item xs={12} sm={6} md={4}>
                         <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #2e7d32' }}>
-                            <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <VerifiedUserIcon color="success" fontSize="large" />
-                            </Box>
+                            <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 2, display: 'flex', mr: 2 }}><VerifiedUserIcon color="success" fontSize="large" /></Box>
                             <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Active Accounts
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" color="success.dark">
-                                    {totalActive}
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">Active Accounts</Typography>
+                                <Typography variant="h4" fontWeight="bold" color="success.dark">{totalActive}</Typography>
                             </Box>
                         </Card>
                     </Grid>
-
                     <Grid item xs={12} sm={6} md={4}>
                         <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #9c27b0' }}>
-                            <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <SchoolIcon color="secondary" fontSize="large" />
-                            </Box>
+                            <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, display: 'flex', mr: 2 }}><SchoolIcon color="secondary" fontSize="large" /></Box>
                             <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Total Mentors
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#7b1fa2' }}>
-                                    {totalMentors}
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">Total Mentors</Typography>
+                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#7b1fa2' }}>{totalMentors}</Typography>
                             </Box>
                         </Card>
                     </Grid>
-
-                    {/* NEW: Total Students Card */}
                     <Grid item xs={12} sm={6} md={4}>
                         <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #ed6c02' }}>
-                            <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <PersonIcon color="warning" fontSize="large" />
-                            </Box>
+                            <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 2, display: 'flex', mr: 2 }}><PersonIcon color="warning" fontSize="large" /></Box>
                             <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Total Students
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#e65100' }}>
-                                    {totalStudents}
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">Total Students</Typography>
+                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#e65100' }}>{totalStudents}</Typography>
                             </Box>
                         </Card>
                     </Grid>
-
-                    {/* NEW: System Admins Card */}
                     <Grid item xs={12} sm={6} md={4}>
                         <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #d32f2f' }}>
-                            <Box sx={{ p: 2, bgcolor: '#ffebee', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <AdminPanelSettingsIcon color="error" fontSize="large" />
-                            </Box>
+                            <Box sx={{ p: 2, bgcolor: '#ffebee', borderRadius: 2, display: 'flex', mr: 2 }}><AdminPanelSettingsIcon color="error" fontSize="large" /></Box>
                             <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    System Admins
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" color="error.dark">
-                                    {totalAdmins}
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">Total Admins</Typography>
+                                <Typography variant="h4" fontWeight="bold" color="error.dark">{totalAdmins}</Typography>
                             </Box>
                         </Card>
                     </Grid>
-
                 </Grid>
 
-                {/* SECTION 1: Pending Applications */}
+                {/* Pending Applications */}
                 <Paper sx={{ width: '100%', mb: 3, p: 2, borderLeft: '6px solid #ed6c02', flexShrink: 0 }}>
-                    <Typography variant="h6" sx={{ mb: 2, color: '#ed6c02', fontWeight: 'bold' }}>
-                        ⚠ Pending Mentor Applications
-                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 2, color: '#ed6c02', fontWeight: 'bold' }}>⚠ Pending Mentor Applications</Typography>
                     <TableContainer sx={{ maxHeight: 200 }}> 
                         <Table size="small" stickyHeader>
                             <TableHead>
@@ -307,111 +263,54 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                     pendingApplications.map((app) => (
                                         <TableRow key={app.id}>
                                             <TableCell sx={{ fontWeight: 'bold' }}>{app.applicant_name}</TableCell>
-                                            <TableCell>
-                                                <Chip label={app.program} size="small" variant="outlined" />
-                                            </TableCell>
-                                            <TableCell sx={{ maxWidth: 400 }}>
-                                                <Typography variant="body2" noWrap title={app.motivation}>{app.motivation}</Typography>
-                                            </TableCell>
+                                            <TableCell><Chip label={app.program} size="small" variant="outlined" /></TableCell>
+                                            <TableCell sx={{ maxWidth: 400 }}><Typography variant="body2" noWrap title={app.motivation}>{app.motivation}</Typography></TableCell>
                                             <TableCell>{app.date}</TableCell>
                                             <TableCell align="right">
-                                                <Button component={Link} href={route('admin.mentor.show', app.id)} size="small" variant="contained" color="info" sx={{ textTransform: 'none' }}>
-                                                    View Request
-                                                </Button>
+                                                <Button component={Link} href={route('admin.mentor.show', app.id)} size="small" variant="contained" color="info" sx={{ textTransform: 'none' }}>View Request</Button>
                                             </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} align="center">
-                                            <Typography color="textSecondary" sx={{ py: 2, fontStyle: 'italic' }}>No pending applications found.</Typography>
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableRow><TableCell colSpan={5} align="center"><Typography color="textSecondary" sx={{ py: 2, fontStyle: 'italic' }}>No pending applications found.</Typography></TableCell></TableRow>
                                 )}
                             </TableBody>
                         </Table>
                     </TableContainer>
                 </Paper>
 
-                {/* SECTION 2: Master User List */}
+                {/* Master User List */}
                 <Paper sx={{ width: '100%', minHeight: '750px', flex: 1, overflow: 'hidden', p: 3, display: 'flex', flexDirection: 'column'}}>
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
                         <Typography variant="h6" component="div" fontWeight="bold">Master User List</Typography>
-                        
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                            
-                            {/* Custom Seamless Search Bar */}
-                            <Paper
-                                variant="outlined"
-                                sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    width: { xs: '100%', md: 300 }, 
-                                    bgcolor: 'white', 
-                                    borderRadius: 2, 
-                                    borderColor: 'divider',
-                                    '&:focus-within': { 
-                                        borderColor: 'primary.main', 
-                                        boxShadow: '0 0 0 1px #1976d2' 
-                                    } 
-                                }}
-                            >
-                                <IconButton sx={{ p: 1, pointerEvents: 'none' }}>
-                                    <SearchIcon color="action" />
-                                </IconButton>
-                                <InputBase
-                                    sx={{ ml: 1, flex: 1, py: 0.5 }}
-                                    placeholder="Search users..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                            <Paper variant="outlined" sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', md: 300 }, bgcolor: 'white', borderRadius: 2, borderColor: 'divider', '&:focus-within': { borderColor: 'primary.main', boxShadow: '0 0 0 1px #1976d2' } }}>
+                                <IconButton sx={{ p: 1, pointerEvents: 'none' }}><SearchIcon color="action" /></IconButton>
+                                <InputBase sx={{ ml: 1, flex: 1, py: 0.5 }} placeholder="Search users..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                             </Paper>
 
-                            {/* Quick Select Dropdown Menu */}
-                            <Button 
-                                variant="outlined" 
-                                onClick={(e) => setQuickSelectAnchor(e.currentTarget)}
-                                sx={{ textTransform: 'none', fontWeight: 'bold', height: 40 }}
-                            >
-                                Quick Select ▼
-                            </Button>
-                            <Menu
-                                anchorEl={quickSelectAnchor}
-                                open={Boolean(quickSelectAnchor)}
-                                onClose={() => setQuickSelectAnchor(null)}
-                            >
+                            <Button variant="outlined" onClick={(e) => setQuickSelectAnchor(e.currentTarget)} sx={{ textTransform: 'none', fontWeight: 'bold', height: 40 }}>Quick Select ▼</Button>
+                            <Menu anchorEl={quickSelectAnchor} open={Boolean(quickSelectAnchor)} onClose={() => setQuickSelectAnchor(null)}>
                                 <MenuItem onClick={() => handleQuickSelect('1st Year')}>Select 1st Years</MenuItem>
                                 <MenuItem onClick={() => handleQuickSelect('2nd Year')}>Select 2nd Years</MenuItem>
                                 <MenuItem onClick={() => handleQuickSelect('3rd Year')}>Select 3rd Years</MenuItem>
                                 <MenuItem onClick={() => handleQuickSelect('4th Year')}>Select 4th Years</MenuItem>
                                 <Divider />
-                                <MenuItem onClick={() => { setSelectedUserIds([]); setQuickSelectAnchor(null); }} sx={{ color: 'error.main' }}>
-                                    Clear All Selections
-                                </MenuItem>
+                                <MenuItem onClick={() => { setSelectedUserIds([]); setQuickSelectAnchor(null); }} sx={{ color: 'error.main' }}>Clear All Selections</MenuItem>
                             </Menu>
 
-                            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate} sx={{ height: 40 }}>
-                                Create Account
-                            </Button>
+                            <Button variant="outlined" color="secondary" onClick={() => setOpenBulkModal(true)} sx={{ height: 40, fontWeight: 'bold' }}>Bulk Upload</Button>
+                            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate} sx={{ height: 40 }}>Create Account</Button>
                         </Box>
                     </Box>
 
-                    {/* Bulk Action Toolbar */}
                     {selectedUserIds.length > 0 && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, p: 1.5, bgcolor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 2 }}>
-                            <Typography variant="subtitle1" fontWeight="bold" color="primary.dark" sx={{ flexGrow: 1, ml: 1 }}>
-                                {selectedUserIds.length} user(s) selected
-                            </Typography>
-                            
+                            <Typography variant="subtitle1" fontWeight="bold" color="primary.dark" sx={{ flexGrow: 1, ml: 1 }}>{selectedUserIds.length} user(s) selected</Typography>
                             <FormControl size="small" sx={{ minWidth: 200, bgcolor: 'white' }}>
                                 <InputLabel id="bulk-year-label">Promote/Set Year Level</InputLabel>
-                                <Select 
-                                    labelId="bulk-year-label" 
-                                    label="Promote/Set Year Level" 
-                                    value={bulkYearLevel} 
-                                    onChange={(e) => setBulkYearLevel(e.target.value)}
-                                >
+                                <Select labelId="bulk-year-label" label="Promote/Set Year Level" value={bulkYearLevel} onChange={(e) => setBulkYearLevel(e.target.value)}>
                                     <MenuItem value="1st Year">1st Year</MenuItem>
                                     <MenuItem value="2nd Year">2nd Year</MenuItem>
                                     <MenuItem value="3rd Year">3rd Year</MenuItem>
@@ -419,15 +318,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                     <MenuItem value="Graduated">Graduated (Set Inactive)</MenuItem>
                                 </Select>
                             </FormControl>
-                            
-                            <Button 
-                                variant="contained" 
-                                color="primary" 
-                                onClick={handleBulkUpdate} 
-                                disabled={!bulkYearLevel}
-                            >
-                                Apply Bulk Update
-                            </Button>
+                            <Button variant="contained" color="primary" onClick={handleBulkUpdate} disabled={!bulkYearLevel}>Apply Bulk Update</Button>
                         </Box>
                     )}
                     
@@ -435,14 +326,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                         <Table stickyHeader size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell padding="checkbox">
-                                        <Checkbox 
-                                            color="primary"
-                                            indeterminate={isSomeVisibleSelected}
-                                            checked={isAllVisibleSelected}
-                                            onChange={handleSelectAll}
-                                        />
-                                    </TableCell>
+                                    <TableCell padding="checkbox"><Checkbox color="primary" indeterminate={isSomeVisibleSelected} checked={isAllVisibleSelected} onChange={handleSelectAll} /></TableCell>
                                     <TableCell><strong>ID</strong></TableCell>
                                     <TableCell><strong>Full Name</strong></TableCell>
                                     <TableCell><strong>Email</strong></TableCell>
@@ -458,96 +342,45 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                             <TableBody>
                                 {filteredUsers.map((user) => (
                                     <TableRow hover key={user.id} selected={selectedUserIds.includes(user.id)}>
-                                        <TableCell padding="checkbox">
-                                            <Checkbox 
-                                                color="primary"
-                                                checked={selectedUserIds.includes(user.id)}
-                                                onChange={(e) => handleSelectOne(e, user.id)}
-                                            />
-                                        </TableCell>
+                                        <TableCell padding="checkbox"><Checkbox color="primary" checked={selectedUserIds.includes(user.id)} onChange={(e) => handleSelectOne(e, user.id)} /></TableCell>
                                         <TableCell>{user.id}</TableCell>
                                         <TableCell sx={{ fontWeight: 'bold' }}>{user.full_name}</TableCell>
                                         <TableCell>{user.email}</TableCell>
                                         <TableCell>{user.student_number || '-'}</TableCell>
-                                        <TableCell>
-                                            {user.program_code !== '-' ? <Chip label={user.program_code} size="small" variant="outlined" /> : '-'}
-                                        </TableCell>
+                                        <TableCell>{user.program_code !== '-' ? <Chip label={user.program_code} size="small" variant="outlined" /> : '-'}</TableCell>
                                         <TableCell>{user.year_level || '-'}</TableCell>
-                                        <TableCell>
-                                            <Chip 
-                                                label={user.role.toUpperCase()} 
-                                                color={user.role === 'admin' ? 'error' : user.role === 'mentor' ? 'primary' : 'default'} 
-                                                size="small" 
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            {user.role === 'mentor' ? (
-                                                <Chip label={user.is_approved} color={getStatusColor(user.is_approved)} size="small" variant="outlined" />
-                                            ) : <span className="text-gray-400">-</span>}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color={getStatusColor(user.status)} fontWeight="bold">
-                                                {user.account_status}
-                                            </Typography>
-                                        </TableCell>
+                                        <TableCell><Chip label={user.role.toUpperCase()} color={user.role === 'admin' ? 'error' : user.role === 'mentor' ? 'primary' : 'default'} size="small" /></TableCell>
+                                        <TableCell>{user.role === 'mentor' ? (<Chip label={user.is_approved} color={getStatusColor(user.is_approved)} size="small" variant="outlined" />) : <span className="text-gray-400">-</span>}</TableCell>
+                                        <TableCell><Typography variant="body2" color={getStatusColor(user.status)} fontWeight="bold">{user.account_status}</Typography></TableCell>
                                         <TableCell align="right">
                                             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                                                {/* Reset Password Button */}
-                                                <Tooltip title="Reset Password to Default">
-                                                    <IconButton size="small" color="warning" onClick={() => setUserToReset(user)}>
-                                                        <LockResetIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Edit User">
-                                                    <IconButton size="small" color="info" onClick={() => handleOpenEdit(user)}>
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Delete User">
-                                                    <IconButton size="small" color="error" onClick={() => setUserToDelete(user)}>
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Tooltip>
+                                                <Tooltip title="Reset Password to Default"><IconButton size="small" color="warning" onClick={() => setUserToReset(user)}><LockResetIcon fontSize="small" /></IconButton></Tooltip>
+                                                <Tooltip title="Edit User"><IconButton size="small" color="info" onClick={() => handleOpenEdit(user)}><EditIcon fontSize="small" /></IconButton></Tooltip>
+                                                <Tooltip title="Delete User"><IconButton size="small" color="error" onClick={() => setUserToDelete(user)}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
                                             </Box>
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {filteredUsers.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
-                                            <Typography variant="body1" color="text.secondary">
-                                                No users found matching "{searchQuery}".
-                                            </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
+                                {filteredUsers.length === 0 && <TableRow><TableCell colSpan={11} align="center" sx={{ py: 3 }}><Typography variant="body1" color="text.secondary">No users found matching "{searchQuery}".</Typography></TableCell></TableRow>}
                             </TableBody>
                         </Table>
                     </TableContainer>
                 </Paper>
             </Container>
 
-            {/* COMBINED MODAL (CREATE & EDIT) */}
+            {/* CREATE & EDIT MODAL */}
             <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
                 <DialogTitle fontWeight="bold">{isEditMode ? 'Edit Account Details' : 'Create New Account'}</DialogTitle>
                 <form onSubmit={handleSubmit}>
                     <DialogContent dividers>
                         <Stack spacing={3} sx={{ mt: 1 }}>
-                            
-                            {!isEditMode && (
-                                <Alert severity="info" variant="outlined" sx={{ fontWeight: 'bold' }}>
-                                    Default Password: <span style={{ fontFamily: 'monospace', fontSize: '1.1em' }}>P2PSys2026</span>
-                                </Alert>
-                            )}
-
+                            {!isEditMode && <Alert severity="info" variant="outlined" sx={{ fontWeight: 'bold' }}>Default Password: <span style={{ fontFamily: 'monospace', fontSize: '1.1em' }}>P2PSys2026</span></Alert>}
                             <Stack direction="row" spacing={2}>
                                 <TextField label="First Name" fullWidth required value={data.fname} onChange={(e) => setData('fname', e.target.value)} error={!!errors.fname} helperText={errors.fname} />
                                 <TextField label="Last Name" fullWidth required value={data.lname} onChange={(e) => setData('lname', e.target.value)} error={!!errors.lname} helperText={errors.lname} />
                                 <TextField label="M.I." value={data.mi} onChange={(e) => setData('mi', e.target.value)} error={!!errors.mi} inputProps={{ maxLength: 5 }} sx={{ width: '100px' }} />
                             </Stack>
-                            
                             <TextField type="email" label="Email Address" fullWidth required value={data.email} onChange={(e) => setData('email', e.target.value)} error={!!errors.email} helperText={errors.email} />
-
                             <Stack direction="row" spacing={2}>
                                 <FormControl fullWidth>
                                     <InputLabel id="role-label">System Role</InputLabel>
@@ -566,7 +399,6 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                     </Select>
                                 </FormControl>
                             </Stack>
-
                             <Stack direction="row" spacing={2}>
                                 <TextField label="Student Number" fullWidth value={data.student_number} onChange={(e) => setData('student_number', e.target.value)} error={!!errors.student_number} helperText={errors.student_number} />
                                 <FormControl fullWidth error={!!errors.year_level}>
@@ -580,8 +412,6 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                     </Select>
                                 </FormControl>
                             </Stack>
-
-                            {/* UPDATED: Autocomplete replacing Select for Academic Program */}
                             <Autocomplete
                                 fullWidth
                                 options={programOptions}
@@ -590,56 +420,86 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                 value={programOptions.find(p => p.program_id === data.program_id) || null}
                                 onChange={(event, newValue) => setData('program_id', newValue ? newValue.program_id : '')}
                                 ListboxProps={{ sx: { maxHeight: 250 } }}
-                                renderInput={(params) => (
-                                    <TextField 
-                                        {...params} 
-                                        label="Academic Program" 
-                                        error={!!errors.program_id} 
-                                        helperText={errors.program_id}
-                                        sx={{ '& input:focus': { boxShadow: 'none !important' } }}
-                                    />
-                                )}
+                                renderInput={(params) => <TextField {...params} label="Academic Program" error={!!errors.program_id} helperText={errors.program_id} sx={{ '& input:focus': { boxShadow: 'none !important' } }} />}
                             />
-
                         </Stack>
                     </DialogContent>
-                    <DialogActions sx={{ p: 3, bgcolor: '#fafafa' }}>
-                        <Button onClick={handleCloseModal} color="inherit">Cancel</Button>
-                        <Button type="submit" variant="contained" disabled={processing}>
-                            {isEditMode ? 'Save Changes' : 'Create Account'}
-                        </Button>
-                    </DialogActions>
+                    <DialogActions sx={{ p: 3, bgcolor: '#fafafa' }}><Button onClick={handleCloseModal} color="inherit">Cancel</Button><Button type="submit" variant="contained" disabled={processing}>{isEditMode ? 'Save Changes' : 'Create Account'}</Button></DialogActions>
                 </form>
+            </Dialog>
+
+            {/* BULK UPLOAD MODAL */}
+            <Dialog open={openBulkModal} onClose={() => { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }} maxWidth="lg" fullWidth>
+                <DialogTitle fontWeight="bold">Bulk Account Import</DialogTitle>
+                <DialogContent dividers>
+                    {/* NEW: Warning Alert for Duplicate Accounts */}
+                    {skippedCount > 0 && (
+                        <Alert severity="warning" sx={{ mb: 2, fontWeight: 'bold' }}>
+                            {skippedCount} row(s) were excluded because those accounts already exists in the system.
+                        </Alert>
+                    )}
+
+                    {!previewData.length ? (
+                        <Box sx={{ textAlign: 'center', py: 5 }}>
+                            <input type="file" accept=".xlsx, .xls, .csv" onChange={handleBulkUpload} id="file-input" style={{ display: 'none' }} />
+                            <label htmlFor="file-input">
+                                <Button variant="contained" component="span" disabled={isUploading}>
+                                    {isUploading ? 'Parsing File...' : 'Select Excel/CSV File'}
+                                </Button>
+                            </label>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                                Ensure your file has headers: <b>fname, lname, mi, email, role, student_number, year_level, program_code</b>
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <TableContainer sx={{ maxHeight: 400 }}>
+                            <Table stickyHeader size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Status</TableCell>
+                                        <TableCell>Name</TableCell>
+                                        <TableCell>Email</TableCell>
+                                        <TableCell>Program</TableCell>
+                                        <TableCell>Errors</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {previewData.map((row) => (
+                                        <TableRow key={row.id} sx={{ bgcolor: row.status === 'Error' ? '#ffebee' : 'transparent' }}>
+                                            <TableCell><Chip label={row.status} color={row.status === 'Ready' ? 'success' : 'error'} size="small" /></TableCell>
+                                            <TableCell>{row.fname} {row.lname}</TableCell>
+                                            <TableCell>{row.email}</TableCell>
+                                            <TableCell>{row.program_code}</TableCell>
+                                            <TableCell sx={{ color: 'error.main' }}>{row.error_message}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }}>Close</Button>
+                    {previewData.length > 0 && (
+                        <Button variant="contained" color="primary" onClick={confirmBulkStore} disabled={previewData.filter(u => u.status === 'Ready').length === 0}>
+                            Confirm & Import {previewData.filter(u => u.status === 'Ready').length} Users
+                        </Button>
+                    )}
+                </DialogActions>
             </Dialog>
 
             {/* RESET PASSWORD CONFIRMATION MODAL */}
             <Dialog open={!!userToReset} onClose={() => setUserToReset(null)} maxWidth="xs" fullWidth>
                 <DialogTitle fontWeight="bold" color="warning.main">Reset Password?</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to reset the password for <strong>{userToReset?.full_name}</strong> back to the default (<span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>P2PSys2026</span>)? 
-                        <br /><br />
-                        They will be required to change their password upon their next login.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setUserToReset(null)} color="inherit">Cancel</Button>
-                    <Button onClick={confirmResetPassword} variant="contained" color="warning">Yes, Reset Password</Button>
-                </DialogActions>
+                <DialogContent><DialogContentText>Are you sure you want to reset the password for <strong>{userToReset?.full_name}</strong> back to the default (<span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>P2PSys2026</span>)?<br /><br />They will be required to change their password upon their next login.</DialogContentText></DialogContent>
+                <DialogActions sx={{ p: 2 }}><Button onClick={() => setUserToReset(null)} color="inherit">Cancel</Button><Button onClick={confirmResetPassword} variant="contained" color="warning">Yes, Reset Password</Button></DialogActions>
             </Dialog>
 
             {/* DELETE CONFIRMATION MODAL */}
             <Dialog open={!!userToDelete} onClose={() => setUserToDelete(null)} maxWidth="xs" fullWidth>
                 <DialogTitle fontWeight="bold" color="error">Delete User?</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to permanently delete the account for <strong>{userToDelete?.full_name}</strong>? This will remove all their data, including profiles and assessments.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setUserToDelete(null)} color="inherit">Cancel</Button>
-                    <Button onClick={confirmDelete} variant="contained" color="error">Yes, Delete Account</Button>
-                </DialogActions>
+                <DialogContent><DialogContentText>Are you sure you want to permanently delete the account for <strong>{userToDelete?.full_name}</strong>? This will remove all their data, including profiles and assessments.</DialogContentText></DialogContent>
+                <DialogActions sx={{ p: 2 }}><Button onClick={() => setUserToDelete(null)} color="inherit">Cancel</Button><Button onClick={confirmDelete} variant="contained" color="error">Yes, Delete Account</Button></DialogActions>
             </Dialog>
 
         </AuthenticatedLayout>

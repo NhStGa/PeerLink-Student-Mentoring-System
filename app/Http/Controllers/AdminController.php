@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\UsersPreviewImport;
+use App\Models\Program;
 
 class AdminController extends Controller
 {
@@ -226,5 +229,139 @@ class AdminController extends Controller
         ]);
 
         return back()->with('success', "Password for {$user->fname} {$user->lname} has been reset to default.");
+    }
+
+    // 1. Parse the uploaded file and return a preview to React
+    public function previewBulk(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120'
+        ]);
+
+        $data = Excel::toArray(new UsersPreviewImport, $request->file('file'))[0];
+
+        $previewData = [];
+        $skippedCount = 0; // NEW: Track duplicates
+        
+        $existingEmails = User::pluck('email')->toArray();
+        $existingStudentNumbers = \App\Models\StudentProfile::pluck('student_number')->filter()->toArray();
+        $programs = Program::all()->keyBy('code');
+
+        foreach ($data as $index => $row) {
+            if (!array_filter($row)) continue;
+
+            $email = $row['email'] ?? '';
+            $studentNo = $row['student_number'] ?? '';
+
+            // NEW: Skip duplicates completely and increment the counter
+            if (in_array($email, $existingEmails) || (!empty($studentNo) && in_array($studentNo, $existingStudentNumbers))) {
+                $skippedCount++;
+                continue;
+            }
+
+            $status = 'Ready';
+            $errors = [];
+
+            if (empty($email)) { 
+                $status = 'Error'; $errors[] = 'Email is required'; 
+            }
+
+            $programCode = strtoupper($row['program_code'] ?? '');
+            $programId = null;
+            if (!empty($programCode)) {
+                if (isset($programs[$programCode])) {
+                    $programId = $programs[$programCode]->program_id;
+                } else {
+                    $status = 'Error'; $errors[] = "Program '$programCode' not found";
+                }
+            }
+
+            // NEW: Normalize the year level (e.g., "3rd year" becomes "3rd Year")
+            $yearLevel = trim($row['year_level'] ?? '');
+            if (!empty($yearLevel)) {
+                $yearLevel = ucwords(strtolower($yearLevel));
+            }
+
+            $previewData[] = [
+                'id' => $index,
+                'fname' => $row['fname'] ?? '',
+                'lname' => $row['lname'] ?? '',
+                'mi' => $row['mi'] ?? '',
+                'email' => $email,
+                'role' => strtolower($row['role'] ?? 'student'),
+                'student_number' => $studentNo,
+                'year_level' => $yearLevel, 
+                'program_code' => $programCode,
+                'program_id' => $programId,
+                'status' => $status,
+                'error_message' => implode(', ', $errors)
+            ];
+        }
+
+        return response()->json([
+            'preview_data' => $previewData,
+            'skipped_count' => $skippedCount // Pass this back to React
+        ]);
+    }
+
+    // 2. Take the confirmed data from React and save it to the DB
+    public function storeBulk(Request $request)
+    {
+        // Re-validate to ensure malicious data wasn't injected from the frontend
+        $validated = $request->validate([
+            'users' => 'required|array',
+            'users.*.fname' => 'required|string|max:255',
+            'users.*.lname' => 'required|string|max:255',
+            'users.*.mi' => 'nullable|string|max:5',
+            'users.*.email' => 'required|email|max:255|unique:users,email',
+            'users.*.role' => 'required|in:student,mentor,admin',
+            'users.*.student_number' => 'nullable|string|max:20|unique:student_profiles,student_number',
+            'users.*.year_level' => 'nullable|string|max:20',
+            'users.*.program_id' => 'nullable|exists:programs,program_id',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['users'] as $userData) {
+                // Create User
+                $user = User::create([
+                    'fname' => $userData['fname'],
+                    'lname' => $userData['lname'],
+                    'mi' => $userData['mi'] ?? null,
+                    'email' => $userData['email'],
+                    'password' => Hash::make('P2PSys2026'),
+                    'role' => $userData['role'],
+                    'status' => 'active',
+                ]);
+
+                // Create Student Profile
+                $user->studentProfile()->create([
+                    'student_number' => $userData['student_number'] ?? null,
+                    'year_level' => $userData['year_level'] ?? null,
+                    'program_id' => $userData['program_id'] ?? null,
+                    'bio' => 'Account created via Bulk Upload.',
+                ]);
+                
+                // Cascade Mentor Logic
+                if ($userData['role'] === 'mentor') {
+                    $user->mentorProfile()->create([
+                        'studprof_id' => $user->studentProfile->studprof_id ?? $user->studentProfile->id,
+                        'is_approved' => true,
+                    ]);
+
+                    $currentSemester = Semester::where('is_current', true)->first();
+                    if ($currentSemester) {
+                        SemesterMentor::firstOrCreate([
+                            'semester_id' => $currentSemester->semester_id,
+                            'student_id' => $user->id,
+                        ], [
+                            'max_mentees' => 3,
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+            }
+        });
+
+        return back()->with('success', count($validated['users']) . ' accounts successfully imported!');
     }
 }
