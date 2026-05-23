@@ -35,13 +35,10 @@ export default function MentorsList({ auth, activeMentors = [], previousMentors 
         setTimeout(() => setSelectedMentor(null), 200); 
     };
 
-    // UPDATED: Handle Review Button Click
     const handleViewReview = (mentor) => {
         if (mentor.review_id) {
-            // They have a review -> Go to Info Page
             router.visit(route('student.reviews.info', mentor.review_id));
         } else {
-            // They DON'T have a review -> Go to Create Form, passing the relationship ID
             router.visit(route('student.reviews.create', { mentor: mentor.id, relationship: mentor.relationship_id }));
         }
     };
@@ -107,7 +104,6 @@ export default function MentorsList({ auth, activeMentors = [], previousMentors 
                         View Details
                     </Button>
                     
-                    {/* UPDATED: Dynamic Review Button for Past Mentors */}
                     {!isActive && (
                         <Button 
                             variant={mentor.review_id ? "outlined" : "contained"} 
@@ -197,7 +193,11 @@ export default function MentorsList({ auth, activeMentors = [], previousMentors 
                     <>
                         <DialogTitle sx={{ p: 3, pb: 2, bgcolor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar sx={{ width: 64, height: 64, bgcolor: selectedMentor.status === 'Active' ? 'primary.main' : 'grey.500', fontSize: '1.8rem' }}>
+                                {/* UPDATED: Added src={selectedMentor.avatar_url} */}
+                                <Avatar 
+                                    src={selectedMentor.avatar_url}
+                                    sx={{ width: 64, height: 64, bgcolor: selectedMentor.status === 'Active' ? 'primary.main' : 'grey.500', fontSize: '1.8rem' }}
+                                >
                                     {selectedMentor.name.charAt(0)}
                                 </Avatar>
                                 <Box>

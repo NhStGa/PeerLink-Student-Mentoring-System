@@ -639,24 +639,10 @@ export default function StudentDashboard({ auth, activeMentors = [], mentorSched
                                 </Box>
                             </Stack>
                         </DialogContent>
-                        <DialogActions sx={{ p: 2, bgcolor: '#fafafa', display: 'flex', justifyContent: 'flex-end' }}>
-                            <Button onClick={() => setTerminateDialogOpen(true)} color="error" variant="outlined" startIcon={<PersonRemoveIcon />} sx={{ textTransform: 'none', borderRadius: 2, borderWidth: 2, '&:hover': { borderWidth: 2 } }}>Terminate Mentorship</Button>
-                        </DialogActions>
+                        
                     </>
                 )}
             </Dialog>
-
-            <Dialog open={terminateDialogOpen} onClose={() => setTerminateDialogOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle fontWeight="bold" color="error.main">Terminate Mentorship?</DialogTitle>
-                <DialogContent>
-                    <Typography>Are you sure you want to terminate your mentorship with <strong>{selectedMentor?.name}</strong>? This action will immediately end the active session and remove them from your active mentors list.</Typography>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setTerminateDialogOpen(false)} color="inherit">Cancel</Button>
-                    <Button onClick={confirmTerminate} variant="contained" color="error">Yes, Terminate</Button>
-                </DialogActions>
-            </Dialog>
-
         </AuthenticatedLayout>
     );
 }

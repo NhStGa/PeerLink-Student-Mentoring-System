@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fix Tailwind CSS Forms plugin clashing with MUI Inputs */
+input:focus, textarea:focus {
+    box-shadow: none !important;
+}

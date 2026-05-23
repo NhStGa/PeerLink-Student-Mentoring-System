@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     Box,
@@ -9,12 +8,13 @@ import {
     Container,
     Paper,
 } from '@mui/material';
+import GroupsIcon from '@mui/icons-material/Groups'; // NEW: Imported the Groups Icon!
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
-        remember: false, // Kept in state for backend compatibility, but removed from UI
+        remember: false, 
     });
 
     useEffect(() => {
@@ -29,13 +29,34 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <GuestLayout>
+        <Box sx={{ 
+                minHeight: '100vh', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                
+                // NEW: Background Image with a dark overlay!
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('/images/auth-bg.png')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
             <Head title="Log in" />
 
             <Container component="main" maxWidth="xs">
-                <Paper elevation={3} sx={{ mt: 1, p: 4, borderRadius: 3 }}>
-                    <Typography component="h1" variant="h5" align="center" gutterBottom>
-                        Sign in to Student Peer Mentoring
+                <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+                    
+                    {/* UPDATED: Added the Logo and Title side-by-side */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
+                        <GroupsIcon color="primary" sx={{ fontSize: 36 }} />
+                        <Typography component="h1" variant="h5" fontWeight="bold" color="primary.main">
+                            Student P2P Mentoring
+                        </Typography>
+                    </Box>
+                    
+                    <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
+                        Sign in to continue
                     </Typography>
 
                     {status && (
@@ -58,6 +79,7 @@ export default function Login({ status, canResetPassword }) {
                             onChange={(e) => setData('email', e.target.value)}
                             error={!!errors.email}
                             helperText={errors.email}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
 
                         <TextField
@@ -73,9 +95,10 @@ export default function Login({ status, canResetPassword }) {
                             onChange={(e) => setData('password', e.target.value)}
                             error={!!errors.password}
                             helperText={errors.password}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
 
-                        {/* Forgot Password Link (Right Aligned) */}
+                        {/* Forgot Password Link */}
                         {canResetPassword && (
                             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                                 <Link href={route('password.request')} style={{ textDecoration: 'none' }}>
@@ -90,18 +113,18 @@ export default function Login({ status, canResetPassword }) {
                             </Box>
                         )}
 
-                        {/* Login Button (Full Width) */}
+                        {/* Login Button */}
                         <Button
                             type="submit"
                             fullWidth
                             variant="contained"
                             disabled={processing}
-                            sx={{ mt: 3, mb: 2 }}
+                            sx={{ mt: 3, mb: 2, py: 1.5, borderRadius: 2, fontWeight: 'bold' }}
                         >
                             Log in
                         </Button>
 
-                        {/* Find Account Section (Centered Bottom) */}
+                        {/* Find Account Section */}
                         <Box sx={{ textAlign: 'center', mt: 2 }}>
                             <Typography variant="body2" color="text.secondary">
                                 Don't have an account?{' '}
@@ -120,6 +143,6 @@ export default function Login({ status, canResetPassword }) {
                     </Box>
                 </Paper>
             </Container>
-        </GuestLayout>
+        </Box>
     );
 }

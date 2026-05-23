@@ -92,74 +92,85 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
                     {/* LEFT COLUMN: Summary Calendar */}
                     <Grid size={{ xs: 12, md: 7, lg: 8 }}>
                         <Paper sx={{ 
-                            p: { xs: 2, md: 4 }, 
+                            p: { xs: 1.5, sm: 3, md: 4 }, // UPDATED: Responsive padding
                             borderRadius: 3, 
                             boxShadow: 3, 
                             bgcolor: '#f8fafc', 
-                            height: { xs: 'auto', md: 882 }, // FIXED HEIGHT: Exact match to the right column
+                            height: { xs: 'auto', md: 882 }, 
                             display: 'flex',
                             flexDirection: 'column'
                         }}>
                             
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                <IconButton onClick={handlePrevMonth} sx={{ bgcolor: '#fff', border: '1px solid #e0e0e0' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 3 } }}>
+                                <IconButton onClick={handlePrevMonth} size="small" sx={{ bgcolor: '#fff', border: '1px solid #e0e0e0' }}>
                                     <ChevronLeftIcon />
                                 </IconButton>
-                                <Typography variant="h5" fontWeight="bold" color="primary.main">
+                                <Typography variant="h5" fontWeight="bold" color="primary.main" sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
                                     {monthName}
                                 </Typography>
-                                <IconButton onClick={handleNextMonth} sx={{ bgcolor: '#fff', border: '1px solid #e0e0e0' }}>
+                                <IconButton onClick={handleNextMonth} size="small" sx={{ bgcolor: '#fff', border: '1px solid #e0e0e0' }}>
                                     <ChevronRightIcon />
                                 </IconButton>
                             </Box>
                             
-                            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: { xs: 500, sm: '100%' }, overflowX: 'auto' }}>
+                            {/* UPDATED: Removed the overflow constraints to force the grid to wrap inside the paper naturally */}
+                            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                                 
                                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 }, mb: 1 }}>
                                     {daysOfWeek.map(day => (
-                                        <Typography key={day} align="center" fontWeight="bold" color="text.secondary" sx={{ textTransform: 'uppercase', fontSize: { xs: '0.7rem', sm: '0.8rem' } }}>
+                                        <Typography key={day} align="center" fontWeight="bold" color="text.secondary" sx={{ textTransform: 'uppercase', fontSize: { xs: '0.65rem', sm: '0.8rem' } }}>
                                             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{day.substring(0, 3)}</Box>
                                             <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>{day.substring(0, 1)}</Box>
                                         </Typography>
                                     ))}
                                 </Box>
 
-                                {/* UPDATED: gridAutoRows='1fr' forces the calendar blocks to stretch beautifully and evenly fill the fixed 882px height! */}
                                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: '1fr', gap: { xs: 0.5, sm: 1 }, flexGrow: 1 }}>
                                     
                                     {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-                                        <Box key={`empty-${index}`} sx={{ p: 1, bgcolor: 'transparent' }} />
+                                        <Box key={`empty-${index}`} sx={{ p: { xs: 0, sm: 1 }, bgcolor: 'transparent' }} />
                                     ))}
 
                                     {Array.from({ length: daysInMonth }).map((_, index) => {
                                         const dateNum = index + 1;
                                         const formattedCellDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
                                         
+                                        // --- NEW: Identify if date is in the past! ---
+                                        const isPastDate = formattedCellDate < todayStr;
+
                                         const daySchedules = schedules.filter(s => s.available_date === formattedCellDate);
-                                        const isToday = new Date().getDate() === dateNum && new Date().getMonth() === month && new Date().getFullYear() === year;
+                                        const isToday = formattedCellDate === todayStr;
                                         const isSelected = selectedDate === formattedCellDate;
 
                                         return (
                                             <Paper 
                                                 key={dateNum} 
                                                 variant="outlined"
+                                                // UPDATED: Prevent clicking if it's a past date
                                                 onClick={() => {
-                                                    setSelectedDate(formattedCellDate);
-                                                    setData('available_date', formattedCellDate); 
+                                                    if (!isPastDate) {
+                                                        setSelectedDate(formattedCellDate);
+                                                        setData('available_date', formattedCellDate); 
+                                                    }
                                                 }} 
                                                 sx={{ 
-                                                    p: { xs: 0.5, sm: 1 }, 
-                                                    bgcolor: isSelected ? '#e3f2fd' : (isToday ? '#fff8e1' : '#ffffff'), 
-                                                    borderColor: isSelected ? 'primary.main' : (isToday ? '#ffe082' : 'divider'),
+                                                    p: { xs: 0.25, sm: 1 }, 
+                                                    // UPDATED: Dim background, border, and text for past dates
+                                                    bgcolor: isSelected ? '#e3f2fd' : (isToday ? '#fff8e1' : (isPastDate ? '#f1f5f9' : '#ffffff')), 
+                                                    borderColor: isSelected ? 'primary.main' : (isToday ? '#ffe082' : (isPastDate ? 'transparent' : 'divider')),
                                                     borderWidth: isSelected ? 2 : 1,
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     alignItems: 'center',
-                                                    cursor: 'pointer',
+                                                    minHeight: { xs: 45, sm: 'auto' }, // Ensure touch targets exist on mobile
+                                                    
+                                                    // UPDATED: 'not-allowed' cursor for past dates
+                                                    cursor: isPastDate ? 'not-allowed' : 'pointer', 
+                                                    opacity: isPastDate ? 0.5 : 1,
                                                     transition: 'all 0.2s',
                                                     '&:hover': {
-                                                        bgcolor: '#f1f5f9',
-                                                        borderColor: 'primary.light'
+                                                        bgcolor: isPastDate ? '#f1f5f9' : '#f1f5f9',
+                                                        borderColor: isPastDate ? 'transparent' : 'primary.light'
                                                     }
                                                 }}
                                             >
@@ -167,10 +178,10 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
                                                     variant="body2" 
                                                     fontWeight="bold" 
                                                     sx={{ 
-                                                        color: isToday ? 'primary.main' : 'text.secondary',
+                                                        color: isToday ? 'primary.main' : (isPastDate ? 'text.disabled' : 'text.secondary'),
                                                         mt: 0.5,
-                                                        mb: 1,
-                                                        fontSize: { xs: '0.85rem', sm: '1rem' }
+                                                        mb: { xs: 0, sm: 1 },
+                                                        fontSize: { xs: '0.75rem', sm: '1rem' }
                                                     }}
                                                 >
                                                     {dateNum}
@@ -178,13 +189,23 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
                                                 
                                                 {daySchedules.length > 0 && (
                                                     <Chip 
-                                                        label={`${daySchedules.length} slot${daySchedules.length > 1 ? 's' : ''}`} 
+                                                        label={
+                                                            <>
+                                                                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                                                                    {`${daySchedules.length} slot${daySchedules.length > 1 ? 's' : ''}`}
+                                                                </Box>
+                                                                <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                                                                    {daySchedules.length}
+                                                                </Box>
+                                                            </>
+                                                        }
                                                         color="primary" 
                                                         size="small"
                                                         sx={{ 
-                                                            fontSize: { xs: '0.6rem', sm: '0.7rem' }, 
-                                                            height: { xs: 20, sm: 24 },
-                                                            mt: 'auto'
+                                                            fontSize: { xs: '0.55rem', sm: '0.7rem' }, 
+                                                            height: { xs: 16, sm: 24 },
+                                                            mt: 'auto',
+                                                            bgcolor: isPastDate ? 'grey.400' : 'primary.main'
                                                         }} 
                                                     />
                                                 )}
@@ -202,12 +223,12 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
 
                             {/* 1. The Daily Details Table (Fixed Height) */}
                             <Paper sx={{ 
-                                height: 350, // FIXED HEIGHT
+                                height: 350, 
                                 borderRadius: 3, 
                                 boxShadow: 3, 
                                 display: 'flex', 
                                 flexDirection: 'column',
-                                overflow: 'hidden' // Keeps border radius clean
+                                overflow: 'hidden' 
                             }}>
                                 <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc' }}>
                                     <Typography variant="subtitle1" fontWeight="bold" color="primary.main" align="center">
@@ -215,7 +236,6 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
                                     </Typography>
                                 </Box>
                                 <TableContainer sx={{ flexGrow: 1, overflowY: 'auto' }}>
-                                    {/* Added stickyHeader so column names stay put when scrolling */}
                                     <Table size="small" stickyHeader>
                                         <TableHead>
                                             <TableRow>
@@ -261,7 +281,7 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
 
                             {/* 2. The Input Form (Fixed Height) */}
                             <Paper sx={{ 
-                                height: 500, // FIXED HEIGHT
+                                height: 500, 
                                 p: { xs: 3, md: 4 }, 
                                 borderRadius: 3, 
                                 boxShadow: 3, 
@@ -289,6 +309,8 @@ export default function AvailableBookingSchedule({ auth, schedules = [] }) {
                                                 setSelectedDate(e.target.value); 
                                             }}
                                             InputLabelProps={{ shrink: true }}
+                                            // UPDATED: Block past dates directly in the date picker!
+                                            inputProps={{ min: todayStr }}
                                             error={!!errors.available_date}
                                             helperText={errors.available_date}
                                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}

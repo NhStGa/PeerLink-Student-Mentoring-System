@@ -7,8 +7,9 @@ import {
     FormControl, Chip, Typography, Button, Dialog, 
     DialogTitle, DialogContent, DialogActions, TextField, 
     InputLabel, Container, Stack, Alert, IconButton, 
-    ListSubheader, DialogContentText, Checkbox, Box, 
-    Menu, Divider, InputBase, Grid, Card, CardContent, Tooltip 
+    DialogContentText, Checkbox, Box, 
+    Menu, Divider, InputBase, Grid, Card, Tooltip,
+    Autocomplete // NEW: Imported Autocomplete
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,6 +19,8 @@ import GroupIcon from '@mui/icons-material/Group';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SchoolIcon from '@mui/icons-material/School';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import PersonIcon from '@mui/icons-material/Person'; // NEW: Icon for Students
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; // NEW: Icon for Admins
 
 export default function AdminDashboard({ auth, users, pendingApplications = [], departments = [] }) {
     // Modal States
@@ -46,6 +49,19 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     const totalUsers = users.length;
     const totalActive = users.filter(u => u.status.toLowerCase() === 'active').length;
     const totalMentors = users.filter(u => u.role.toLowerCase() === 'mentor').length;
+    // NEW: Added Student and Admin counters
+    const totalStudents = users.filter(u => u.role.toLowerCase() === 'student').length;
+    const totalAdmins = users.filter(u => u.role.toLowerCase() === 'admin').length;
+
+    // --- Format Programs for Autocomplete ---
+    const programOptions = departments.flatMap(dept => 
+        (dept.programs || []).map(prog => ({
+            ...prog,
+            departmentCode: dept.code,
+            departmentName: dept.name,
+            label: `${prog.code} - ${prog.name}`
+        }))
+    );
 
     // --- Real-time Search Filter ---
     const filteredUsers = users.filter(user => {
@@ -181,9 +197,95 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
         <AuthenticatedLayout user={auth.user}>
             <Head title="Admin Dashboard" />
 
-            {/* UPDATED: Changed height to minHeight so it doesn't squish the content */}
-            <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 2 }}>
+            <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 4 }}>
                 
+                {/* System Overview Counter Cards */}
+                <Grid container spacing={3} sx={{ mb: 3, flexShrink: 0, margin: 'auto', paddingBottom: '20px' }}>
+                    
+                    <Grid item xs={12} sm={6} md={4}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #1976d2' }}>
+                            <Box sx={{ p: 2, bgcolor: '#e3f2fd', borderRadius: 2, display: 'flex', mr: 2 }}>
+                                <GroupIcon color="primary" fontSize="large" />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                                    Total User Accounts
+                                </Typography>
+                                <Typography variant="h4" fontWeight="bold" color="primary.dark">
+                                    {totalUsers}
+                                </Typography>
+                            </Box>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #2e7d32' }}>
+                            <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 2, display: 'flex', mr: 2 }}>
+                                <VerifiedUserIcon color="success" fontSize="large" />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                                    Active Accounts
+                                </Typography>
+                                <Typography variant="h4" fontWeight="bold" color="success.dark">
+                                    {totalActive}
+                                </Typography>
+                            </Box>
+                        </Card>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={4}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #9c27b0' }}>
+                            <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, display: 'flex', mr: 2 }}>
+                                <SchoolIcon color="secondary" fontSize="large" />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                                    Total Mentors
+                                </Typography>
+                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#7b1fa2' }}>
+                                    {totalMentors}
+                                </Typography>
+                            </Box>
+                        </Card>
+                    </Grid>
+
+                    {/* NEW: Total Students Card */}
+                    <Grid item xs={12} sm={6} md={4}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #ed6c02' }}>
+                            <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 2, display: 'flex', mr: 2 }}>
+                                <PersonIcon color="warning" fontSize="large" />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                                    Total Students
+                                </Typography>
+                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#e65100' }}>
+                                    {totalStudents}
+                                </Typography>
+                            </Box>
+                        </Card>
+                    </Grid>
+
+                    {/* NEW: System Admins Card */}
+                    <Grid item xs={12} sm={6} md={4}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #d32f2f' }}>
+                            <Box sx={{ p: 2, bgcolor: '#ffebee', borderRadius: 2, display: 'flex', mr: 2 }}>
+                                <AdminPanelSettingsIcon color="error" fontSize="large" />
+                            </Box>
+                            <Box>
+                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                                    System Admins
+                                </Typography>
+                                <Typography variant="h4" fontWeight="bold" color="error.dark">
+                                    {totalAdmins}
+                                </Typography>
+                            </Box>
+                        </Card>
+                    </Grid>
+
+                </Grid>
+
                 {/* SECTION 1: Pending Applications */}
                 <Paper sx={{ width: '100%', mb: 3, p: 2, borderLeft: '6px solid #ed6c02', flexShrink: 0 }}>
                     <Typography variant="h6" sx={{ mb: 2, color: '#ed6c02', fontWeight: 'bold' }}>
@@ -231,59 +333,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                     </TableContainer>
                 </Paper>
 
-                {/* System Overview Counter Cards */}
-                <Grid container spacing={3} sx={{ mb: 3, flexShrink: 0, margin: 'auto', paddingBottom: '20px' }}>
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #1976d2' }}>
-                            <Box sx={{ p: 2, bgcolor: '#e3f2fd', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <GroupIcon color="primary" fontSize="large" />
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Total User Accounts
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" color="primary.dark">
-                                    {totalUsers}
-                                </Typography>
-                            </Box>
-                        </Card>
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ display: 'flex', alignItems: 'center', textAlign: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #2e7d32' }}>
-                            <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <VerifiedUserIcon color="success" fontSize="large" />
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Active Accounts
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" color="success.dark">
-                                    {totalActive}
-                                </Typography>
-                            </Box>
-                        </Card>
-                    </Grid>
-
-                    <Grid item xs={12} md={4}>
-                        <Card sx={{ display: 'flex', alignItems: 'center', textAlign: 'center', p: 2, borderRadius: 3, boxShadow: 2, borderLeft: '6px solid #9c27b0' }}>
-                            <Box sx={{ p: 2, bgcolor: '#f3e5f5', borderRadius: 2, display: 'flex', mr: 2 }}>
-                                <SchoolIcon color="secondary" fontSize="large" />
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" fontWeight="bold" textTransform="uppercase">
-                                    Total Mentors
-                                </Typography>
-                                <Typography variant="h4" fontWeight="bold" sx={{ color: '#7b1fa2' }}>
-                                    {totalMentors}
-                                </Typography>
-                            </Box>
-                        </Card>
-                    </Grid>
-                </Grid>
-
                 {/* SECTION 2: Master User List */}
-                {/* UPDATED: Increased minHeight to 750px */}
                 <Paper sx={{ width: '100%', minHeight: '750px', flex: 1, overflow: 'hidden', p: 3, display: 'flex', flexDirection: 'column'}}>
                     
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
@@ -531,22 +581,25 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                                 </FormControl>
                             </Stack>
 
-                            <FormControl fullWidth error={!!errors.program_id}>
-                                <InputLabel id="program-label">Academic Program</InputLabel>
-                                <Select labelId="program-label" label="Academic Program" value={data.program_id} onChange={(e) => setData('program_id', e.target.value)}>
-                                    <MenuItem value=""><em>None</em></MenuItem>
-                                    {departments.map((dept) => [
-                                        <ListSubheader key={`header-${dept.department_id}`} sx={{ fontWeight: 'bold', color: 'primary.main', bgcolor: '#f5f5f5', lineHeight: '36px' }}>
-                                            {dept.name} ({dept.code})
-                                        </ListSubheader>,
-                                        dept.programs.map((prog) => (
-                                            <MenuItem key={prog.program_id} value={prog.program_id} sx={{ pl: 4 }}>
-                                                {prog.code} - {prog.name}
-                                            </MenuItem>
-                                        ))
-                                    ])}
-                                </Select>
-                            </FormControl>
+                            {/* UPDATED: Autocomplete replacing Select for Academic Program */}
+                            <Autocomplete
+                                fullWidth
+                                options={programOptions}
+                                groupBy={(option) => `${option.departmentName} (${option.departmentCode})`}
+                                getOptionLabel={(option) => option.label}
+                                value={programOptions.find(p => p.program_id === data.program_id) || null}
+                                onChange={(event, newValue) => setData('program_id', newValue ? newValue.program_id : '')}
+                                ListboxProps={{ sx: { maxHeight: 250 } }}
+                                renderInput={(params) => (
+                                    <TextField 
+                                        {...params} 
+                                        label="Academic Program" 
+                                        error={!!errors.program_id} 
+                                        helperText={errors.program_id}
+                                        sx={{ '& input:focus': { boxShadow: 'none !important' } }}
+                                    />
+                                )}
+                            />
 
                         </Stack>
                     </DialogContent>

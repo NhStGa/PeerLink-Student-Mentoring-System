@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { 
     Box, TextField, Button, Typography, 
     Container, Paper, InputAdornment 
@@ -43,7 +42,19 @@ export default function ForgotPassword() {
     };
 
     return (
-        <GuestLayout>
+        <Box sx={{ 
+                minHeight: '100vh', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                
+                // NEW: Background Image with a dark overlay!
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('/images/auth-bg.png')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
             <Head title="Forgot Password" />
 
             <Container component="main" maxWidth="xs">
@@ -58,7 +69,7 @@ export default function ForgotPassword() {
                     </Box>
 
                     <Typography component="h1" variant="h5" fontWeight="bold" gutterBottom>
-                        {step === 1 ? 'Find Your Account' : 'Create New Password'}
+                        {step === 1 ? 'Forgot your Password?' : 'Create New Password'}
                     </Typography>
 
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -160,6 +171,6 @@ export default function ForgotPassword() {
 
                 </Paper>
             </Container>
-        </GuestLayout>
+        </Box>
     );
 }

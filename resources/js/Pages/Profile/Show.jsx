@@ -54,7 +54,6 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                 initialIndex={activeIndex} 
             />
 
-            {/* UPDATED CONTAINER STYLING: minHeight 110vh */}
             <Container 
                 maxWidth="md" 
                 sx={{ 
@@ -64,7 +63,6 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                     py: 2 
                 }}
             >
-                {/* UPDATED CARD STYLING: Removed overflowY to allow natural growing */}
                 <Card sx={{ 
                     flexGrow: 1, 
                     borderRadius: 4, 
@@ -72,10 +70,16 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                     display: 'flex',
                     flexDirection: 'column'
                 }}>
-                    <CardContent sx={{ p: 5, flexGrow: 1 }}>
+                    <CardContent sx={{ p: { xs: 3, sm: 5 }, flexGrow: 1 }}>
                         
                         {/* SECTION 1: HEADER */}
-                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 4, alignItems: 'flex-start' }}>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: { xs: 'column', sm: 'row' }, 
+                            gap: { xs: 2, sm: 4 }, 
+                            alignItems: { xs: 'center', sm: 'flex-start' },
+                            textAlign: { xs: 'center', sm: 'left' }
+                        }}>
                             <Avatar 
                                 src={user.avatar_url}
                                 sx={{ width: 120, height: 120, bgcolor: '#1976d2', fontSize: '3rem' }}
@@ -83,17 +87,17 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                                 {user.fname[0]}{user.lname[0]}
                             </Avatar>
 
-                            <Box sx={{ flexGrow: 1 }}>
+                            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-start' } }}>
                                 <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
                                     {user.fname} {user.mi ? `${user.mi}.` : ''} {user.lname}
                                 </Typography>
                                 
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: { xs: 'center', sm: 'flex-start' } }}>
                                     <Typography variant="body1" color="text.secondary">
                                         {user.email}
                                     </Typography>
                                     
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', mt: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', sm: 'flex-start' }, gap: 1, color: 'text.secondary', mt: 1 }}>
                                         <SchoolIcon fontSize="small" />
                                         <Typography variant="body2" fontWeight="500">
                                             {studentProfile?.student_number || 'No Student No.'}
@@ -107,14 +111,14 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                                 </Box>
                             </Box>
 
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', sm: 'flex-end' }, gap: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-end' }, gap: 2, mt: { xs: 2, sm: 0 } }}>
                                 <Chip 
                                     label={user.role.toUpperCase()} 
                                     color="primary" 
                                     sx={{ fontWeight: 'bold' }} 
                                 />
 
-                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Box sx={{ display: 'flex', gap: 1, justifyContent: { xs: 'center', sm: 'flex-end' } }}>
                                     {studentProfile?.year_level === '4th Year' && user.role === 'student' && (
                                         <>
                                             {applicationStatus === 'pending' ? (
@@ -150,9 +154,27 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
 
                         {/* TABS NAVIGATION */}
                         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-                            <Tabs value={tabIndex} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
+                            <Tabs 
+                                value={tabIndex} 
+                                onChange={handleTabChange} 
+                                textColor="primary" 
+                                indicatorColor="primary" 
+                                variant="scrollable" 
+                                scrollButtons="auto" 
+                                allowScrollButtonsMobile
+                                // UPDATED: Forced the internal flex container to always align items to the start (left)
+                                sx={{
+                                    '& .MuiTabs-flexContainer': {
+                                        justifyContent: 'flex-start'
+                                    }
+                                }}
+                            >
                                 <Tab icon={<PersonIcon />} iconPosition="start" label="My Info" sx={{ fontWeight: 'bold', textTransform: 'none', fontSize: '1rem' }} />
-                                <Tab icon={<RateReviewIcon />} iconPosition="start" label={`My Reviews (${myReviews.length})`} sx={{ fontWeight: 'bold', textTransform: 'none', fontSize: '1rem' }} />
+                                
+                                {user.role !== 'admin' && (
+                                    <Tab icon={<RateReviewIcon />} iconPosition="start" label={`My Reviews (${myReviews.length})`} sx={{ fontWeight: 'bold', textTransform: 'none', fontSize: '1rem' }} />
+                                )}
+                                
                                 {/* Conditional Tab for Mentors Only */}
                                 {user.role === 'mentor' && (
                                     <Tab icon={<StarIcon />} iconPosition="start" label={`My Ratings (${mentorRatings.length})`} sx={{ fontWeight: 'bold', textTransform: 'none', fontSize: '1rem' }} />
@@ -176,44 +198,46 @@ export default function Show({ auth, studentProfile, mentorProfile, applicationS
                                     </Box>
                                 </Box>
 
-                                <Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <StarIcon color="action" sx={{ mr: 1 }} />
-                                        <Typography variant="h6" fontWeight="bold">My Skills & Competencies</Typography>
-                                    </Box>
+                                {user.role !== 'admin' && (
+                                    <Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                            <StarIcon color="action" sx={{ mr: 1 }} />
+                                            <Typography variant="h6" fontWeight="bold">My Skills & Competencies</Typography>
+                                        </Box>
 
-                                    <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, borderStyle: mySkills?.length > 0 ? 'solid' : 'dashed' }}>
-                                        {mySkills && mySkills.length > 0 ? (
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                {mySkills.map((skill) => (
-                                                    <Chip
-                                                        key={skill.id}
-                                                        label={`${skill.name} • ${skill.rating}/5`}
-                                                        color={getSkillColor(skill.rating)}
-                                                        variant={skill.rating >= 4 ? 'filled' : 'outlined'}
-                                                        sx={{ fontWeight: '500' }}
-                                                    />
-                                                ))}
-                                            </Box>
-                                        ) : (
-                                            <Box sx={{ textAlign: 'center', py: 2 }}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                                    You haven't assessed any skills yet.
-                                                </Typography>
-                                                <Link href={route('skills.assess')}>
-                                                    <Button size="small" variant="contained" color="primary">
-                                                        Take Skill Assessment
-                                                    </Button>
-                                                </Link>
-                                            </Box>
-                                        )}
-                                    </Paper>
-                                </Box>
+                                        <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, borderStyle: mySkills?.length > 0 ? 'solid' : 'dashed' }}>
+                                            {mySkills && mySkills.length > 0 ? (
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                    {mySkills.map((skill) => (
+                                                        <Chip
+                                                            key={skill.id}
+                                                            label={`${skill.name} • ${skill.rating}/5`}
+                                                            color={getSkillColor(skill.rating)}
+                                                            variant={skill.rating >= 4 ? 'filled' : 'outlined'}
+                                                            sx={{ fontWeight: '500' }}
+                                                        />
+                                                    ))}
+                                                </Box>
+                                            ) : (
+                                                <Box sx={{ textAlign: 'center', py: 2 }}>
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                        You haven't assessed any skills yet.
+                                                    </Typography>
+                                                    <Link href={route('skills.assess')}>
+                                                        <Button size="small" variant="contained" color="primary">
+                                                            Take Skill Assessment
+                                                        </Button>
+                                                    </Link>
+                                                </Box>
+                                            )}
+                                        </Paper>
+                                    </Box>
+                                )}
                             </Box>
                         )}
 
                         {/* TAB 2: MY REVIEWS (Written BY user) */}
-                        {tabIndex === 1 && (
+                        {tabIndex === 1 && user.role !== 'admin' && (
                             <Box>
                                 {myReviews.length > 0 ? (
                                     <Stack spacing={3}>

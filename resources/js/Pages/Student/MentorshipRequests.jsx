@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
     Container, Paper, Typography, Box, Button, Grid, 
     List, ListItem, ListItemButton, ListItemText, Divider, Chip,
@@ -15,6 +15,17 @@ import BlockIcon from '@mui/icons-material/Block';
 export default function MentorshipRequests({ auth, requests }) {
     const [selectedRequest, setSelectedRequest] = useState(requests[0] || null);
     const [requestToCancel, setRequestToCancel] = useState(null);
+    
+    // NEW: Ref to help mobile users scroll to the details panel automatically
+    const detailsRef = useRef(null);
+
+    const handleSelectRequest = (req) => {
+        setSelectedRequest(req);
+        // NEW: On mobile, automatically scroll down to the details panel when a request is clicked
+        if (window.innerWidth < 900) {
+            setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+        }
+    };
 
     const confirmCancel = () => {
         router.patch(route('student.mentorship.cancel', requestToCancel.id), {}, {
@@ -42,7 +53,16 @@ export default function MentorshipRequests({ auth, requests }) {
         <AuthenticatedLayout user={auth.user}>
             <Head title="My Mentorship Requests" />
 
-            <Container maxWidth="xl" sx={{ height: 'calc(100vh - 112px)', display: 'flex', flexDirection: 'column', py: 2 }}>
+            <Container 
+                maxWidth="xl" 
+                sx={{ 
+                    // UPDATED: Changed height to minHeight to allow natural stacking on mobile
+                    minHeight: 'calc(100vh - 112px)', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    py: { xs: 3, md: 4 } 
+                }}
+            >
                 <Box sx={{ mb: 2 }}>
                     <Box sx={{ mb: 1 }}>
                         <Link href={route('student.dashboard')}>
@@ -54,10 +74,12 @@ export default function MentorshipRequests({ auth, requests }) {
                     <Typography variant="h4" fontWeight="bold">My Mentorship Requests</Typography>
                 </Box>
 
-                <Grid container spacing={3} sx={{ height: '100%', flexWrap: 'nowrap' }}>
+                {/* UPDATED: flexWrap allows stacking on mobile (xs) and side-by-side on desktop (md) */}
+                <Grid container spacing={3} sx={{ height: { xs: 'auto', md: '100%' }, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
                     
                     {/* LEFT COLUMN: List of Requests */}
-                    <Grid item sx={{ width: '400px', flexShrink: 0, height: '100%' }}>
+                    {/* UPDATED: Width is 100% on mobile, fixed 400px on desktop. Height is constrained to 400px on mobile to allow scrolling. */}
+                    <Grid item sx={{ width: { xs: '100%', md: '400px' }, flexShrink: 0, height: { xs: '400px', md: '100%' } }}>
                         <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc', borderRadius: '12px 12px 0 0' }}>
                                 <Typography variant="h6" fontWeight="bold">Application History</Typography>
@@ -68,7 +90,7 @@ export default function MentorshipRequests({ auth, requests }) {
                                     <ListItem key={req.id} disablePadding sx={{ mb: 1 }}>
                                         <ListItemButton 
                                             selected={selectedRequest?.id === req.id} 
-                                            onClick={() => setSelectedRequest(req)} 
+                                            onClick={() => handleSelectRequest(req)} 
                                             sx={{ 
                                                 borderRadius: 2, 
                                                 border: '1px solid',
@@ -102,15 +124,14 @@ export default function MentorshipRequests({ auth, requests }) {
                     </Grid>
 
                     {/* RIGHT COLUMN: Request Details */}
-                    <Grid item sx={{ flexGrow: 1, height: '100%', minWidth: 0 }}>
+                    {/* UPDATED: Height automatically adjusts on mobile. Ref added for auto-scroll. */}
+                    <Grid item ref={detailsRef} sx={{ flexGrow: 1, height: { xs: 'auto', md: '100%' }, width: { xs: '100%', md: 'auto' }, minWidth: 0 }}>
                         <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             {selectedRequest ? (
                                 <>
                                     {/* Header */}
-                                    <Box sx={{ p: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: 1, borderColor: 'divider' }}>
+                                    <Box sx={{ p: { xs: 3, md: 4 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, borderBottom: 1, borderColor: 'divider' }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                            
-                                            {/* NEW: Added the big Avatar for the selected mentor! */}
                                             <Avatar 
                                                 src={selectedRequest.avatar_url} 
                                                 sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: '1.8rem' }}
@@ -122,7 +143,7 @@ export default function MentorshipRequests({ auth, requests }) {
                                                 <Typography variant="overline" color="text.secondary" fontWeight="bold">
                                                     Application Details
                                                 </Typography>
-                                                <Typography variant="h4" fontWeight="bold" gutterBottom>
+                                                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
                                                     {selectedRequest.mentor_name}
                                                 </Typography>
                                                 <Typography variant="body1" color="text.secondary">
@@ -130,14 +151,14 @@ export default function MentorshipRequests({ auth, requests }) {
                                                 </Typography>
                                             </Box>
                                         </Box>
-                                        <Box sx={{ textAlign: 'right' }}>
+                                        <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, mt: { xs: 1, sm: 0 } }}>
                                             <Typography variant="body2" color="text.secondary" mb={1}>Current Status</Typography>
                                             {getStatusChip(selectedRequest.status)}
                                         </Box>
                                     </Box>
 
                                     {/* Body */}
-                                    <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 4 }}>
+                                    <Box sx={{ flexGrow: 1, overflowY: { xs: 'visible', md: 'auto' }, p: { xs: 3, md: 4 } }}>
                                         <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
                                             Your Explanation / Motivation
                                         </Typography>
@@ -156,19 +177,19 @@ export default function MentorshipRequests({ auth, requests }) {
                                                 color="error" 
                                                 startIcon={<CancelIcon />}
                                                 onClick={() => setRequestToCancel(selectedRequest)}
-                                                sx={{ textTransform: 'none', borderRadius: 2 }}
+                                                sx={{ textTransform: 'none', borderRadius: 2, width: { xs: '100%', sm: 'auto' } }}
                                             >
                                                 Cancel Application
                                             </Button>
                                         ) : (
-                                            <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                            <Typography variant="body2" color="text.secondary" fontStyle="italic" sx={{ width: { xs: '100%', sm: 'auto' }, textAlign: 'center' }}>
                                                 This application has been {selectedRequest.status.toLowerCase()}.
                                             </Typography>
                                         )}
                                     </Box>
                                 </>
                             ) : (
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', bgcolor: '#f8fafc', borderRadius: 3 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', bgcolor: '#f8fafc', borderRadius: 3, p: 4, textAlign: 'center' }}>
                                     <Typography color="text.secondary">Select an application from the list to view its details.</Typography>
                                 </Box>
                             )}

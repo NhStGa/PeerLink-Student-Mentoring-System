@@ -108,7 +108,7 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
         <AuthenticatedLayout user={auth.user}>
             <Head title="Book a Session" />
 
-            <Container maxWidth="xl" sx={{ py: 6 }}>
+            <Container maxWidth="xl" sx={{ py: 2 }}>
                 
                 <Box sx={{ mb: 4 }}>
                     <Link href={route('student.dashboard')}>
@@ -140,7 +140,6 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                         options={relationships}
                                         getOptionLabel={(option) => `${option.mentor?.fname} ${option.mentor?.lname}`}
                                         value={relationships.find(r => r.mentor_id === data.mentor_id) || null}
-                                        // UPDATED: Added ListboxProps to limit height
                                         ListboxProps={{ sx: { maxHeight: 250 } }}
                                         onChange={(event, newValue) => {
                                             setData(prev => ({ 
@@ -158,14 +157,43 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                                 label="Search Your Mentor..." 
                                                 error={!!errors.mentor_id}
                                                 helperText={errors.mentor_id || "Type a name to search or select from the list."}
-                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8fafc' } }}
+                                                sx={{ 
+                                                    '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#f8fafc' },
+                                                    '& input:focus': { boxShadow: 'none !important' } 
+                                                }}
                                             />
                                         )}
                                     />
 
-                                    <TextField fullWidth label="Topic Title" placeholder="e.g., Help with Database Normalization" value={data.topic_title} onChange={(e) => setData('topic_title', e.target.value)} error={!!errors.topic_title} helperText={errors.topic_title} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                    <TextField 
+                                        fullWidth 
+                                        label="Topic Title" 
+                                        placeholder="e.g., Help with Database Normalization" 
+                                        value={data.topic_title} 
+                                        onChange={(e) => setData('topic_title', e.target.value)} 
+                                        error={!!errors.topic_title} 
+                                        helperText={errors.topic_title} 
+                                        sx={{ 
+                                            '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                                            '& input:focus': { boxShadow: 'none !important' } 
+                                        }} 
+                                    />
 
-                                    <TextField fullWidth multiline rows={4} label="Topic Description" placeholder="Briefly describe what you want to achieve or struggle with..." value={data.topic_description} onChange={(e) => setData('topic_description', e.target.value)} error={!!errors.topic_description} helperText={errors.topic_description} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+                                    <TextField 
+                                        fullWidth 
+                                        multiline 
+                                        rows={4} 
+                                        label="Topic Description" 
+                                        placeholder="Briefly describe what you want to achieve or struggle with..." 
+                                        value={data.topic_description} 
+                                        onChange={(e) => setData('topic_description', e.target.value)} 
+                                        error={!!errors.topic_description} 
+                                        helperText={errors.topic_description} 
+                                        sx={{ 
+                                            '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                                            '& textarea:focus': { boxShadow: 'none !important' } 
+                                        }} 
+                                    />
 
                                     <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                                         
@@ -174,7 +202,6 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                             options={skills}
                                             getOptionLabel={(option) => option.skill_name}
                                             value={skills.find(s => s.skill_id === data.skill_id) || null}
-                                            // UPDATED: Added ListboxProps to limit height
                                             ListboxProps={{ sx: { maxHeight: 250 } }}
                                             onChange={(event, newValue) => setData('skill_id', newValue ? newValue.skill_id : '')}
                                             renderInput={(params) => (
@@ -183,7 +210,10 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                                     label="Search Related Skill..." 
                                                     error={!!errors.skill_id}
                                                     helperText={errors.skill_id}
-                                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                                                    sx={{ 
+                                                        '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                                                        '& input:focus': { boxShadow: 'none !important' } 
+                                                    }}
                                                 />
                                             )}
                                         />
@@ -192,7 +222,6 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                             fullWidth
                                             options={locations}
                                             value={data.location || null}
-                                            // UPDATED: Added ListboxProps to limit height
                                             ListboxProps={{ sx: { maxHeight: 250 } }}
                                             onChange={(event, newValue) => setData('location', newValue || '')}
                                             renderInput={(params) => (
@@ -201,7 +230,10 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                                     label="Search Location..." 
                                                     error={!!errors.location}
                                                     helperText={errors.location}
-                                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                                                    sx={{ 
+                                                        '& .MuiOutlinedInput-root': { borderRadius: 2 },
+                                                        '& input:focus': { boxShadow: 'none !important' } 
+                                                    }}
                                                 />
                                             )}
                                         />
@@ -305,11 +337,19 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                                                     <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                                                                         <TextField 
                                                                             type="time" label="Proposed Start Time" value={data.start_time} onChange={e => setData('start_time', e.target.value)} 
-                                                                            InputLabelProps={{ shrink: true }} fullWidth error={!!errors.start_time} helperText={errors.start_time} sx={{ bgcolor: 'white', borderRadius: 1 }} 
+                                                                            InputLabelProps={{ shrink: true }} fullWidth error={!!errors.start_time} helperText={errors.start_time} 
+                                                                            sx={{ 
+                                                                                bgcolor: 'white', borderRadius: 1,
+                                                                                '& input:focus': { boxShadow: 'none !important' } 
+                                                                            }} 
                                                                         />
                                                                         <TextField 
                                                                             type="time" label="Proposed End Time" value={data.end_time} onChange={e => setData('end_time', e.target.value)} 
-                                                                            InputLabelProps={{ shrink: true }} fullWidth error={!!errors.end_time} helperText={errors.end_time || "Requires mentor approval"} sx={{ bgcolor: 'white', borderRadius: 1 }} 
+                                                                            InputLabelProps={{ shrink: true }} fullWidth error={!!errors.end_time} helperText={errors.end_time || "Requires mentor approval"} 
+                                                                            sx={{ 
+                                                                                bgcolor: 'white', borderRadius: 1,
+                                                                                '& input:focus': { boxShadow: 'none !important' } 
+                                                                            }} 
                                                                         />
                                                                     </Box>
                                                                 )}
@@ -394,27 +434,39 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
                                             const dateNum = index + 1;
                                             const formattedCellDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
                                             
+                                            // --- NEW: Identify if date is in the past! ---
+                                            const isPastDate = formattedCellDate < todayStr;
+                                            
                                             const daySchedules = mentorSchedules.filter(s => s.available_date === formattedCellDate);
                                             const hasCustomSchedulesOnDay = customSchedules.some(s => s.session_date === formattedCellDate);
                                             
                                             const isSelected = selectedDate === formattedCellDate;
-                                            const isToday = new Date().getDate() === dateNum && new Date().getMonth() === month && new Date().getFullYear() === year;
+                                            const isToday = formattedCellDate === todayStr;
 
                                             return (
                                                 <Paper 
                                                     key={dateNum} 
                                                     variant="outlined"
-                                                    onClick={() => data.mentor_id ? handleDayClick(formattedCellDate) : null}
+                                                    // UPDATED: Prevent clicking if it's a past date
+                                                    onClick={() => (data.mentor_id && !isPastDate) ? handleDayClick(formattedCellDate) : null}
                                                     sx={{ 
                                                         height: 54, 
                                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                        bgcolor: isSelected ? 'primary.main' : (isToday ? '#fff8e1' : '#ffffff'), 
-                                                        borderColor: isSelected ? 'primary.main' : (isToday ? '#ffe082' : 'divider'),
-                                                        color: isSelected ? '#fff' : 'inherit',
-                                                        cursor: data.mentor_id ? 'pointer' : 'default', 
+                                                        
+                                                        // UPDATED: Dim background, border, and text for past dates
+                                                        bgcolor: isSelected ? 'primary.main' : (isToday ? '#fff8e1' : (isPastDate ? '#f1f5f9' : '#ffffff')), 
+                                                        borderColor: isSelected ? 'primary.main' : (isToday ? '#ffe082' : (isPastDate ? 'transparent' : 'divider')),
+                                                        color: isSelected ? '#fff' : (isPastDate ? 'text.disabled' : 'inherit'),
+                                                        opacity: isPastDate ? 0.5 : 1,
+                                                        
+                                                        // UPDATED: 'not-allowed' cursor for past dates
+                                                        cursor: !data.mentor_id ? 'default' : (isPastDate ? 'not-allowed' : 'pointer'), 
                                                         transition: 'all 0.2s',
                                                         position: 'relative',
-                                                        '&:hover': { bgcolor: (data.mentor_id && !isSelected) ? '#f1f5f9' : (isSelected ? 'primary.dark' : undefined) }
+                                                        
+                                                        '&:hover': { 
+                                                            bgcolor: (data.mentor_id && !isSelected && !isPastDate) ? '#e2e8f0' : (isSelected ? 'primary.dark' : undefined) 
+                                                        }
                                                     }}
                                                 >
                                                     <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
@@ -423,10 +475,10 @@ export default function SessionBooking({ auth, schedules = [], skills = [], user
 
                                                     <Box sx={{ display: 'flex', gap: 0.5, position: 'absolute', bottom: 6 }}>
                                                         {daySchedules.length > 0 && !isSelected && (
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main' }} />
+                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: isPastDate ? 'grey.400' : 'primary.main' }} />
                                                         )}
                                                         {hasCustomSchedulesOnDay && !isSelected && (
-                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'warning.main' }} />
+                                                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: isPastDate ? 'grey.400' : 'warning.main' }} />
                                                         )}
                                                     </Box>
                                                 </Paper>

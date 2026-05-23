@@ -13,6 +13,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DomainIcon from '@mui/icons-material/Domain';
 import StarIcon from '@mui/icons-material/Star';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export default function AcademicStatusManagement({ auth, semesters, departments }) {
     const [tabIndex, setTabIndex] = useState(0);
@@ -32,6 +33,8 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
     const [openSemModal, setOpenSemModal] = useState(false);
     const [editingSemId, setEditingSemId] = useState(null);
     const [semToDelete, setSemToDelete] = useState(null);
+    // NEW: State for activation confirmation
+    const [semToActivate, setSemToActivate] = useState(null);
     
     const { data: semData, setData: setSemData, post: postSem, put: putSem, processing: procSem, errors: errSem, reset: resetSem, clearErrors: clearErrSem } = useForm({
         name: '', term: '1st Semester', start_date: '', end_date: '', is_current: false
@@ -41,7 +44,6 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
         clearErrSem();
         if (sem) {
             setEditingSemId(sem.semester_id);
-            // Format dates for the date input type (YYYY-MM-DD)
             setSemData({
                 name: sem.name, term: sem.term, is_current: sem.is_current,
                 start_date: sem.start_date ? sem.start_date.split('T')[0] : '', 
@@ -61,6 +63,20 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
         } else {
             postSem(route('admin.academic.semesters.store'), { onSuccess: () => setOpenSemModal(false) });
         }
+    };
+
+    // UPDATED: Now triggers the PUT request from the modal confirmation
+    const confirmActivateSemester = () => {
+        if (!semToActivate) return;
+        router.put(route('admin.academic.semesters.update', semToActivate.semester_id), {
+            name: semToActivate.name,
+            term: semToActivate.term,
+            start_date: semToActivate.start_date ? semToActivate.start_date.split('T')[0] : '',
+            end_date: semToActivate.end_date ? semToActivate.end_date.split('T')[0] : '',
+            is_current: true // Force it to active!
+        }, {
+            onSuccess: () => setSemToActivate(null)
+        });
     };
 
     // ==================== DEPARTMENT STATE ====================
@@ -156,28 +172,83 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                             </Box>
                             
                             <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-                                <Grid container spacing={2}>
+                                {/* UPDATED: Changed from Grid to CSS Grid for strict uniform widths */}
+                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 2 }}>
                                     {semesters.map(sem => (
-                                        <Grid item xs={12} md={6} lg={4} key={sem.semester_id}>
-                                            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: sem.is_current ? 'primary.main' : 'divider', borderWidth: sem.is_current ? 2 : 1 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <Box>
-                                                        {sem.is_current && <Chip icon={<StarIcon />} label="Current Semester" color="primary" size="small" sx={{ mb: 1 }} />}
-                                                        <Typography variant="h6" fontWeight="bold" lineHeight={1.2}>{sem.name}</Typography>
-                                                        <Typography variant="body2" color="text.secondary">{sem.term}</Typography>
-                                                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                                                            {new Date(sem.start_date).toLocaleDateString()} - {new Date(sem.end_date).toLocaleDateString()}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex' }}>
-                                                        <IconButton size="small" onClick={() => handleOpenSemModal(sem)}><EditIcon fontSize="small" color="info" /></IconButton>
-                                                        <IconButton size="small" onClick={() => setSemToDelete(sem)}><DeleteIcon fontSize="small" color="error" /></IconButton>
-                                                    </Box>
-                                                </Box>
-                                            </Paper>
-                                        </Grid>
+                                        <Paper 
+                                            key={sem.semester_id}
+                                            variant="outlined" 
+                                            sx={{ 
+                                                height: 210, // Fixed height
+                                                display: 'flex', 
+                                                flexDirection: 'column',
+                                                borderRadius: 2,
+                                                overflow: 'hidden',
+                                                borderColor: sem.is_current ? 'primary.main' : 'divider', 
+                                                borderWidth: sem.is_current ? 2 : 1,
+                                                transition: 'all 0.2s',
+                                                '&:hover': { boxShadow: 2, borderColor: 'primary.main' }
+                                            }}
+                                        >
+                                            {/* CARD HEADER */}
+                                            <Box sx={{ bgcolor: sem.is_current ? '#bbdefb' : '#f8fafc', p: 1.5, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography variant="subtitle2" fontWeight="bold" color={sem.is_current ? "primary.main" : "text.primary"}>
+                                                    {sem.name}
+                                                </Typography>
+                                                {sem.is_current && <Chip icon={<StarIcon />} label="Current" color="primary" size="small" />}
+                                            </Box>
+
+                                            {/* CARD BODY */}
+                                            <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                                <Typography variant="h5" fontWeight="bold" color="primary.dark">
+                                                    {sem.term}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                                    {new Date(sem.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} 
+                                                    {" - "} 
+                                                    {new Date(sem.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </Typography>
+                                            </Box>
+
+                                            <Divider />
+
+                                            {/* CARD FOOTER */}
+                                            <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, bgcolor: '#fafafa' }}>
+                                                {!sem.is_current && (
+                                                    <Button 
+                                                        size="small" 
+                                                        startIcon={<CheckCircleIcon />} 
+                                                        color="success"
+                                                        // Trigger the modal instead of instantly saving
+                                                        onClick={() => setSemToActivate(sem)}
+                                                        sx={{ textTransform: 'none', mr: 'auto', fontWeight: 'bold' }}
+                                                    >
+                                                        Activate
+                                                    </Button>
+                                                )}
+                                                
+                                                <Button 
+                                                    size="small" 
+                                                    startIcon={<EditIcon />} 
+                                                    color="info" 
+                                                    onClick={() => handleOpenSemModal(sem)} 
+                                                    sx={{ textTransform: 'none' }}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button 
+                                                    size="small" 
+                                                    startIcon={<DeleteIcon />} 
+                                                    color="error" 
+                                                    onClick={() => setSemToDelete(sem)} 
+                                                    sx={{ textTransform: 'none' }}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </Box>
+                                        </Paper>
                                     ))}
-                                </Grid>
+                                </Box>
                             </Box>
                         </Paper>
                     )}
@@ -196,7 +267,7 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                                         </Button>
                                     </Box>
                                     
-                                    {/* UPDATED: Department Cards Stack */}
+                                    {/* Department Cards Stack */}
                                     <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                                         {departments.map((dept) => {
                                             const isSelected = selectedDepartment?.department_id === dept.department_id;
@@ -207,7 +278,7 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                                                     variant="outlined" 
                                                     onClick={() => setSelectedDepartment(dept)}
                                                     sx={{ 
-                                                        minHeight: 180, // Fixed size to match structure 
+                                                        minHeight: 180, 
                                                         display: 'flex', 
                                                         flexDirection: 'column',
                                                         borderRadius: 2,
@@ -219,64 +290,28 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                                                         '&:hover': { boxShadow: 2, borderColor: 'primary.main' }
                                                     }}
                                                 >
-                                                    {/* CARD HEADER: Department Code */}
                                                     <Box sx={{ bgcolor: isSelected ? '#bbdefb' : '#e3f2fd', p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
                                                         <Typography variant="subtitle2" fontWeight="bold" color="primary.main" noWrap>
                                                             {dept.code}
                                                         </Typography>
                                                     </Box>
 
-                                                    {/* CARD BODY: Department Name */}
                                                     <Box sx={{ p: 2, flexGrow: 1, display: 'flex', alignItems: 'flex-start' }}>
-                                                        <Typography 
-                                                            variant="body2" 
-                                                            fontWeight="medium" 
-                                                            sx={{ 
-                                                                display: '-webkit-box',
-                                                                WebkitBoxOrient: 'vertical',
-                                                                WebkitLineClamp: 2, 
-                                                                overflow: 'hidden',
-                                                                lineHeight: 1.4,
-                                                                width: '100%'
-                                                            }}
-                                                        >
+                                                        <Typography variant="body2" fontWeight="medium" sx={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', lineHeight: 1.4, width: '100%' }}>
                                                             {dept.name}
                                                         </Typography>
                                                     </Box>
 
                                                     <Divider />
 
-                                                    {/* CARD FOOTER: Action Buttons */}
                                                     <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, bgcolor: '#fafafa' }}>
-                                                        <Button 
-                                                            size="small" 
-                                                            startIcon={<EditIcon />} 
-                                                            // Stop propagation prevents the click from selecting the card
-                                                            onClick={(e) => { e.stopPropagation(); handleOpenDeptModal(dept); }}
-                                                            sx={{ textTransform: 'none' }}
-                                                            color="info"
-                                                        >
-                                                            Edit
-                                                        </Button>
-                                                        <Button 
-                                                            size="small" 
-                                                            startIcon={<DeleteIcon />} 
-                                                            onClick={(e) => { e.stopPropagation(); setDeptToDelete(dept); }}
-                                                            sx={{ textTransform: 'none' }}
-                                                            color="error"
-                                                        >
-                                                            Delete
-                                                        </Button>
+                                                        <Button size="small" startIcon={<EditIcon />} onClick={(e) => { e.stopPropagation(); handleOpenDeptModal(dept); }} sx={{ textTransform: 'none' }} color="info">Edit</Button>
+                                                        <Button size="small" startIcon={<DeleteIcon />} onClick={(e) => { e.stopPropagation(); setDeptToDelete(dept); }} sx={{ textTransform: 'none' }} color="error">Delete</Button>
                                                     </Box>
                                                 </Paper>
                                             );
                                         })}
-
-                                        {departments.length === 0 && (
-                                            <Typography color="text.secondary" align="center" sx={{ mt: 4 }}>
-                                                No departments found.
-                                            </Typography>
-                                        )}
+                                        {departments.length === 0 && <Typography color="text.secondary" align="center" sx={{ mt: 4 }}>No departments found.</Typography>}
                                     </Box>
                                 </Paper>
                             </Grid>
@@ -286,7 +321,6 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                                 <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                                     {selectedDepartment ? (
                                         <>
-                                            {/* Header of the Right Column */}
                                             <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8fafc', borderBottom: 1, borderColor: 'divider', borderRadius: '12px 12px 0 0' }}>
                                                 <Box>
                                                     <Typography variant="h5" fontWeight="bold" color="primary">{selectedDepartment.code} Programs</Typography>
@@ -297,21 +331,14 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                                                 </Button>
                                             </Box>
 
-                                            {/* Scrollable Area for Program Cards */}
                                             <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}>
-                                                
-                                                {/* UPDATED: Changed from MUI Grid to strict CSS Grid for perfectly uniform cards */}
-                                                <Box sx={{ 
-                                                    display: 'grid', 
-                                                    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', 
-                                                    gap: 2 
-                                                }}>
+                                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
                                                     {selectedDepartment.programs && selectedDepartment.programs.map((prog) => (
                                                         <Paper 
                                                             key={prog.program_id}
                                                             variant="outlined" 
                                                             sx={{ 
-                                                                height: 180, // FIXED HEIGHT
+                                                                height: 180, 
                                                                 display: 'flex', 
                                                                 flexDirection: 'column',
                                                                 borderRadius: 2,
@@ -320,53 +347,21 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                                                                 '&:hover': { boxShadow: 2, borderColor: 'primary.main' }
                                                             }}
                                                         >
-                                                            {/* CARD HEADER: Program Code */}
                                                             <Box sx={{ bgcolor: '#e3f2fd', p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-                                                                <Typography variant="subtitle2" fontWeight="bold" color="primary.main" noWrap>
-                                                                    {prog.code}
-                                                                </Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" color="primary.main" noWrap>{prog.code}</Typography>
                                                             </Box>
 
-                                                            {/* CARD BODY: Program Name */}
                                                             <Box sx={{ p: 2, flexGrow: 1, display: 'flex', alignItems: 'flex-start' }}>
-                                                                <Typography 
-                                                                    variant="body2" 
-                                                                    fontWeight="medium" 
-                                                                    sx={{ 
-                                                                        display: '-webkit-box',
-                                                                        WebkitBoxOrient: 'vertical',
-                                                                        WebkitLineClamp: 3, // Allows up to 3 lines before adding "..."
-                                                                        overflow: 'hidden',
-                                                                        lineHeight: 1.4,
-                                                                        width: '100%' // Protects the flex width constraint
-                                                                    }}
-                                                                >
+                                                                <Typography variant="body2" fontWeight="medium" sx={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3, overflow: 'hidden', lineHeight: 1.4, width: '100%' }}>
                                                                     {prog.name}
                                                                 </Typography>
                                                             </Box>
 
                                                             <Divider />
 
-                                                            {/* CARD FOOTER: Action Buttons */}
                                                             <Box sx={{ p: 1, display: 'flex', justifyContent: 'flex-end', gap: 1, bgcolor: '#fafafa' }}>
-                                                                <Button 
-                                                                    size="small" 
-                                                                    startIcon={<EditIcon />} 
-                                                                    onClick={() => handleOpenProgModal(prog)}
-                                                                    sx={{ textTransform: 'none' }}
-                                                                    color="info"
-                                                                >
-                                                                    Edit
-                                                                </Button>
-                                                                <Button 
-                                                                    size="small" 
-                                                                    startIcon={<DeleteIcon />} 
-                                                                    onClick={() => setProgToDelete(prog)}
-                                                                    sx={{ textTransform: 'none' }}
-                                                                    color="error"
-                                                                >
-                                                                    Delete
-                                                                </Button>
+                                                                <Button size="small" startIcon={<EditIcon />} onClick={() => handleOpenProgModal(prog)} sx={{ textTransform: 'none' }} color="info">Edit</Button>
+                                                                <Button size="small" startIcon={<DeleteIcon />} onClick={() => setProgToDelete(prog)} sx={{ textTransform: 'none' }} color="error">Delete</Button>
                                                             </Box>
                                                         </Paper>
                                                     ))}
@@ -413,6 +408,20 @@ export default function AcademicStatusManagement({ auth, semesters, departments 
                         <Button type="submit" variant="contained" disabled={procSem}>Save</Button>
                     </DialogActions>
                 </form>
+            </Dialog>
+
+            {/* NEW: ACTIVATION CONFIRMATION MODAL */}
+            <Dialog open={!!semToActivate} onClose={() => setSemToActivate(null)} maxWidth="xs" fullWidth>
+                <DialogTitle color="success.main" fontWeight="bold">Activate Semester?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to set <strong>{semToActivate?.name}</strong> as the current active semester? This will replace the currently active one.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setSemToActivate(null)} color="inherit">Cancel</Button>
+                    <Button onClick={confirmActivateSemester} variant="contained" color="success">Yes, Activate</Button>
+                </DialogActions>
             </Dialog>
 
             <Dialog open={!!semToDelete} onClose={() => setSemToDelete(null)}>

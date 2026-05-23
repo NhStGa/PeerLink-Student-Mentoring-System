@@ -1,4 +1,3 @@
-import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { 
     Box, 
@@ -24,7 +23,19 @@ export default function AccountFinder() {
     };
 
     return (
-        <GuestLayout>
+        <Box sx={{ 
+                minHeight: '100vh', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                
+                // NEW: Background Image with a dark overlay!
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('/images/auth-bg.png')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
             <Head title="Find My Account" />
 
             <Container component="main" maxWidth="xs">
@@ -149,6 +160,6 @@ export default function AccountFinder() {
                     )}
                 </Paper>
             </Container>
-        </GuestLayout>
+        </Box>
     );
 }

@@ -308,7 +308,7 @@ export default function MentorDashboard({ auth, activeMentees = [], pendingReque
 
                     {/* ROW 2: Scheduling Row */}
                     <Grid size={{ xs: 12, md: 8 }}>
-                        <Card sx={{ height: 650, display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
+                        <Card sx={{ height: 730, display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc' }}>
                                 <Typography variant="h6" fontWeight="bold" color="primary.main">My Schedule</Typography>
                                 <Button component={Link} href={route('mentor.schedule.create')} variant="contained" startIcon={<AddIcon />} size="small" sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 'bold' }}>
@@ -377,7 +377,7 @@ export default function MentorDashboard({ auth, activeMentees = [], pendingReque
                     </Grid>
 
                     <Grid size={{ xs: 12, md: 4 }}>
-                        <Card sx={{ height: 650, display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
+                        <Card sx={{ height: 730, display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc' }}>
                                 <Typography variant="h6" fontWeight="bold" color="primary.main">
                                     Session Bookings

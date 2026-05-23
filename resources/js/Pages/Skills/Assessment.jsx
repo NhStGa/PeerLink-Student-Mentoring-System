@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
     Container, Paper, Typography, TextField, Grid, 
     List, ListItem, ListItemButton, ListItemText, ListItemIcon,
@@ -15,6 +15,9 @@ import SchoolIcon from '@mui/icons-material/School';
 export default function Assessment({ auth, categories, existingAssessments }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSkill, setSelectedSkill] = useState(null);
+    
+    // NEW: Ref to help mobile users scroll to the form automatically
+    const formRef = useRef(null);
 
     const { data, setData, post, processing, reset } = useForm({
         skill_id: '',
@@ -23,22 +26,25 @@ export default function Assessment({ auth, categories, existingAssessments }) {
 
     const handleSelectSkill = (skill) => {
         setSelectedSkill(skill);
-        // UPDATED: Use skill_id from database
         const existing = existingAssessments[skill.skill_id];
         setData({
             skill_id: skill.skill_id,
             rating: existing ? existing.rating.toString() : '',
         });
+        
+        // NEW: On mobile, automatically scroll down to the rating form when a skill is clicked
+        if (window.innerWidth < 900) {
+            setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+        }
     };
 
     const filteredCategories = useMemo(() => {
         if (!searchTerm) return categories;
         return categories.map(cat => ({
             ...cat,
-            // UPDATED: Filter through skill_subjects array instead of skills
             skill_subjects: (cat.skill_subjects || []).filter(skill => 
                 skill.skill_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                skill.skill_code.toLowerCase().includes(searchTerm.toLowerCase()) // Bonus: Search by code too!
+                skill.skill_code.toLowerCase().includes(searchTerm.toLowerCase())
             )
         })).filter(cat => cat.skill_subjects && cat.skill_subjects.length > 0);
     }, [categories, searchTerm]);
@@ -69,16 +75,19 @@ export default function Assessment({ auth, categories, existingAssessments }) {
             <Container 
                 maxWidth="lg" 
                 sx={{ 
-                    height: 'calc(100vh - 112px)', 
+                    // UPDATED: Changed height to minHeight to allow mobile stacking
+                    minHeight: 'calc(100vh - 112px)', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    py: 2 
+                    py: { xs: 3, md: 4 } 
                 }}
             >
-                <Grid container spacing={3} sx={{ height: '100%', flexWrap: 'nowrap' }}> 
+                {/* UPDATED: flexWrap allows stacking on mobile (xs) and side-by-side on desktop (md) */}
+                <Grid container spacing={3} sx={{ height: { xs: 'auto', md: '100%' }, flexWrap: { xs: 'wrap', md: 'nowrap' } }}> 
                     
-                    {/* LEFT COLUMN: Search & Select - Fixed Width */}
-                    <Grid item sx={{ width: '350px', flexShrink: 0, height: '100%' }}> 
+                    {/* LEFT COLUMN: Search & Select */}
+                    {/* UPDATED: Width is 100% on mobile, fixed 350px on desktop. Height is constrained to 400px on mobile so users can scroll to the form below. */}
+                    <Grid item sx={{ width: { xs: '100%', md: '350px' }, flexShrink: 0, height: { xs: '400px', md: '100%' } }}> 
                         <Paper sx={{ 
                             p: 3, 
                             height: '100%', 
@@ -101,12 +110,10 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                             <Box sx={{ flexGrow: 1, overflowY: 'auto', pr: 1 }}>
                                 {filteredCategories.map((category) => (
                                     <Box key={category.skillcategory_id} sx={{ mb: 2 }}>
-                                        {/* UPDATED: category_name */}
                                         <Typography variant="subtitle2" color="primary" sx={{ px: 2, mb: 1, fontWeight: 'bold' }}>
                                             {category.category_name}
                                         </Typography>
                                         <List disablePadding>
-                                            {/* UPDATED: Iterate over skill_subjects */}
                                             {category.skill_subjects && category.skill_subjects.map((skill) => {
                                                 const isRated = existingAssessments[skill.skill_id];
                                                 return (
@@ -120,7 +127,7 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                                                                 {isRated ? <CheckCircleIcon color="success" fontSize="small" /> : <SchoolIcon color="action" fontSize="small" />}
                                                             </ListItemIcon>
                                                             <ListItemText 
-                                                                primary={skill.skill_name} // UPDATED: skill_name
+                                                                primary={skill.skill_name}
                                                                 secondary={isRated ? `Rated: ${isRated.rating}/5` : null}
                                                             />
                                                         </ListItemButton>
@@ -140,12 +147,13 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                     </Grid>
 
                     {/* RIGHT COLUMN: Rating Area */}
-                    <Grid item sx={{ flexGrow: 1, height: '100%', width: 'auto', minWidth: 0 }}> 
+                    {/* UPDATED: Height automatically adjusts on mobile so the form isn't squished */}
+                    <Grid item sx={{ flexGrow: 1, height: { xs: 'auto', md: '100%' }, width: { xs: '100%', md: 'auto' }, minWidth: 0 }} ref={formRef}> 
                         <Paper sx={{ 
-                            p: 4, 
+                            p: { xs: 3, md: 4 }, 
                             height: '100%',
                             width: '100%', 
-                            overflowY: 'auto',
+                            overflowY: { xs: 'visible', md: 'auto' },
                             borderRadius: 3,
                             boxShadow: 3,
                             display: 'flex',
@@ -157,11 +165,11 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                                     <Typography variant="h5" gutterBottom>
                                         Rate your knowledge
                                     </Typography>
-                                    <Typography variant="h4" color="primary" fontWeight="bold" gutterBottom noWrap>
-                                        {selectedSkill.skill_name} {/* UPDATED: skill_name */}
+                                    <Typography variant="h4" color="primary" fontWeight="bold" gutterBottom sx={{ wordBreak: 'break-word' }}>
+                                        {selectedSkill.skill_name}
                                     </Typography>
                                     <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                        Code: {selectedSkill.skill_code} {/* Bonus: Show code here too */}
+                                        Code: {selectedSkill.skill_code}
                                     </Typography>
                                     <Divider sx={{ my: 3 }} />
                                     
@@ -188,7 +196,7 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                                                             value={option.value}
                                                             control={<Radio />}
                                                             label={
-                                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                                                                     <Typography fontWeight="bold" sx={{ mr: 1, minWidth: '20px' }}>{option.value}</Typography>
                                                                     <Typography variant="body2" color="text.secondary">- {option.label}</Typography>
                                                                 </Box>
@@ -200,11 +208,12 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                                             </RadioGroup>
                                         </FormControl>
 
-                                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                        <Box sx={{ display: 'flex', justifyContent: { xs: 'center', sm: 'flex-end' } }}>
                                             <Button 
                                                 size="large"
                                                 variant="contained" 
                                                 type="submit" 
+                                                fullWidth={window.innerWidth < 600}
                                                 disabled={!data.rating || processing}
                                                 startIcon={<CheckCircleIcon />}
                                             >
@@ -218,7 +227,7 @@ export default function Assessment({ auth, categories, existingAssessments }) {
                                     textAlign: 'center', 
                                     bgcolor: '#f5f5f5', 
                                     borderStyle: 'dashed', 
-                                    p: 6,
+                                    p: { xs: 4, md: 6 },
                                     borderRadius: 3,
                                     width: '100%'
                                 }}>
