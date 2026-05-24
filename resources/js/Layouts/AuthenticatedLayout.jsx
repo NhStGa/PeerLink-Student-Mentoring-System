@@ -71,7 +71,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                 <GroupsIcon color="primary" />
                 {/* UPDATED: Changed from Mentoring to Student Mentoring */}
                 <Typography variant="h6" fontWeight="bold" color="primary.main">
-                    Student Mentoring
+                    PeerLink
                 </Typography>
             </Box>
             <Divider />
@@ -125,7 +125,7 @@ export default function AuthenticatedLayout({ user, header, children }) {
                                 textDecoration: 'none',
                             }}
                         >
-                            Student Mentoring
+                            PeerLink
                         </Typography>
 
                         {/* UPDATED: Removed the Mobile Title/Logo completely and replaced it with a flex spacer */}

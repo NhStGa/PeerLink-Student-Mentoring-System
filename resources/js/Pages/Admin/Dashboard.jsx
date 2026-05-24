@@ -22,6 +22,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import PersonIcon from '@mui/icons-material/Person'; 
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; 
+import CloseIcon from '@mui/icons-material/Close'; // NEW: For the close button
 
 export default function AdminDashboard({ auth, users, pendingApplications = [], departments = [] }) {
     // Modal States
@@ -36,7 +37,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     // Bulk Import States
     const [openBulkModal, setOpenBulkModal] = useState(false);
     const [previewData, setPreviewData] = useState([]);
-    const [skippedCount, setSkippedCount] = useState(0); // NEW: Track skipped duplicates
+    const [skippedCount, setSkippedCount] = useState(0); 
     const [isUploading, setIsUploading] = useState(false);
 
     // Bulk Update & Quick Select States
@@ -57,7 +58,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     const totalActive = users.filter(u => u.status.toLowerCase() === 'active').length;
     const totalMentors = users.filter(u => u.role.toLowerCase() === 'mentor').length;
     const totalStudents = users.filter(u => u.role.toLowerCase() === 'student').length;
-    const totalAdmins = users.filter(u => u.role.toLowerCase() === 'admin').length;
+    const totalAdmins = users.filter(u => u.role.toLowerCase() === 'admin').length + 1;
 
     const programOptions = departments.flatMap(dept => 
         (dept.programs || []).map(prog => ({
@@ -124,7 +125,7 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
         try {
             const response = await axios.post(route('admin.users.bulk_preview'), formData);
             setPreviewData(response.data.preview_data);
-            setSkippedCount(response.data.skipped_count || 0); // Store skipped count
+            setSkippedCount(response.data.skipped_count || 0);
             setIsUploading(false);
             e.target.value = null; 
         } catch (error) {
@@ -132,6 +133,39 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
             setIsUploading(false);
             e.target.value = null;
         }
+    };
+
+    // NEW: Handler for inline editing in the preview table
+    const handleEditPreview = (id, field, value) => {
+        setPreviewData(prev => prev.map(item => {
+            if (item.id === id) {
+                let updated = { ...item, [field]: value };
+
+                // Logic: If they fix the program code, try to re-validate it
+                if (field === 'program_code') {
+                    const found = programOptions.find(p => p.code === value.toUpperCase());
+                    if (found) {
+                        updated.program_id = found.program_id;
+                        updated.program_code = found.code;
+                        updated.status = 'Ready';
+                        updated.error_message = '';
+                    } else {
+                        updated.program_id = null;
+                        updated.status = 'Error';
+                        updated.error_message = `Program '${value}' not found`;
+                    }
+                }
+                
+                // General Logic: If required fields are filled, set to Ready
+                if (updated.email && updated.fname && updated.lname && updated.status === 'Error' && !updated.error_message.includes('already exists')) {
+                    updated.status = 'Ready';
+                    updated.error_message = '';
+                }
+
+                return updated;
+            }
+            return item;
+        }));
     };
 
     const confirmBulkStore = () => {
@@ -429,13 +463,24 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
             </Dialog>
 
             {/* BULK UPLOAD MODAL */}
-            <Dialog open={openBulkModal} onClose={() => { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }} maxWidth="lg" fullWidth>
-                <DialogTitle fontWeight="bold">Bulk Account Import</DialogTitle>
+            <Dialog 
+                open={openBulkModal} 
+                onClose={(e, reason) => { if (reason !== 'backdropClick') { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }}} 
+                disableEscapeKeyDown
+                maxWidth="xl" 
+                fullWidth
+            >
+                <DialogTitle sx={{ m: 0, p: 2, fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    Bulk Account Import
+                    <IconButton onClick={() => { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }} sx={{ color: 'grey.500' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
                 <DialogContent dividers>
-                    {/* NEW: Warning Alert for Duplicate Accounts */}
                     {skippedCount > 0 && (
                         <Alert severity="warning" sx={{ mb: 2, fontWeight: 'bold' }}>
-                            {skippedCount} row(s) were excluded because those accounts already exists in the system.
+                            {skippedCount} row(s) were excluded because those accounts already exist in the system.
                         </Alert>
                     )}
 
@@ -452,25 +497,75 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                             </Typography>
                         </Box>
                     ) : (
-                        <TableContainer sx={{ maxHeight: 400 }}>
+                        <TableContainer sx={{ maxHeight: 500 }}>
                             <Table stickyHeader size="small">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell>Name</TableCell>
-                                        <TableCell>Email</TableCell>
-                                        <TableCell>Program</TableCell>
-                                        <TableCell>Errors</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>First Name</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Last Name</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>M.I.</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Email</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Role</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Student #</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Prog. Code</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Year Level</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {previewData.map((row) => (
-                                        <TableRow key={row.id} sx={{ bgcolor: row.status === 'Error' ? '#ffebee' : 'transparent' }}>
-                                            <TableCell><Chip label={row.status} color={row.status === 'Ready' ? 'success' : 'error'} size="small" /></TableCell>
-                                            <TableCell>{row.fname} {row.lname}</TableCell>
-                                            <TableCell>{row.email}</TableCell>
-                                            <TableCell>{row.program_code}</TableCell>
-                                            <TableCell sx={{ color: 'error.main' }}>{row.error_message}</TableCell>
+                                        <TableRow key={row.id} sx={{ bgcolor: row.status === 'Error' ? '#fff5f5' : 'transparent' }}>
+                                            <TableCell>
+                                                <Tooltip title={row.error_message || row.status}>
+                                                    <Chip label={row.status} color={row.status === 'Ready' ? 'success' : 'error'} size="small" variant="outlined" sx={{ fontWeight: 'bold' }} />
+                                                </Tooltip>
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                                <InputBase value={row.fname} onChange={(e) => handleEditPreview(row.id, 'fname', e.target.value)} sx={{ fontSize: '0.85rem' }} />
+                                            </TableCell>
+                                            
+                                            <TableCell>
+                                                <InputBase value={row.lname} onChange={(e) => handleEditPreview(row.id, 'lname', e.target.value)} sx={{ fontSize: '0.85rem' }} />
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <InputBase value={row.mi} onChange={(e) => handleEditPreview(row.id, 'mi', e.target.value)} sx={{ width: 35, fontSize: '0.85rem' }} inputProps={{ maxLength: 2 }} />
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <InputBase value={row.email} onChange={(e) => handleEditPreview(row.id, 'email', e.target.value)} sx={{ fontSize: '0.85rem', width: 180 }} />
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <Select value={row.role} onChange={(e) => handleEditPreview(row.id, 'role', e.target.value)} size="small" variant="standard" sx={{ fontSize: '0.85rem' }}>
+                                                    <MenuItem value="student">student</MenuItem>
+                                                    <MenuItem value="mentor">mentor</MenuItem>
+                                                    <MenuItem value="admin">admin</MenuItem>
+                                                </Select>
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <InputBase value={row.student_number} onChange={(e) => handleEditPreview(row.id, 'student_number', e.target.value)} sx={{ fontSize: '0.85rem' }} />
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <InputBase 
+                                                    value={row.program_code} 
+                                                    onChange={(e) => handleEditPreview(row.id, 'program_code', e.target.value)} 
+                                                    sx={{ fontSize: '0.85rem', width: 80, color: !row.program_id && row.program_code ? 'error.main' : 'inherit', fontWeight: !row.program_id ? 'bold' : 'normal' }} 
+                                                />
+                                            </TableCell>
+
+                                            <TableCell>
+                                                <Select value={row.year_level} onChange={(e) => handleEditPreview(row.id, 'year_level', e.target.value)} size="small" variant="standard" sx={{ fontSize: '0.85rem' }}>
+                                                    <MenuItem value=""><em>None</em></MenuItem>
+                                                    <MenuItem value="1st Year">1st Year</MenuItem>
+                                                    <MenuItem value="2nd Year">2nd Year</MenuItem>
+                                                    <MenuItem value="3rd Year">3rd Year</MenuItem>
+                                                    <MenuItem value="4th Year">4th Year</MenuItem>
+                                                </Select>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -478,10 +573,16 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                         </TableContainer>
                     )}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }}>Close</Button>
+                <DialogActions sx={{ p: 2, bgcolor: '#f8fafc' }}>
+                    <Button onClick={() => { setOpenBulkModal(false); setPreviewData([]); setSkippedCount(0); }} color="inherit" sx={{ fontWeight: 'bold' }}>Cancel</Button>
                     {previewData.length > 0 && (
-                        <Button variant="contained" color="primary" onClick={confirmBulkStore} disabled={previewData.filter(u => u.status === 'Ready').length === 0}>
+                        <Button 
+                            variant="contained" 
+                            color="primary" 
+                            onClick={confirmBulkStore} 
+                            disabled={previewData.filter(u => u.status === 'Ready').length === 0}
+                            sx={{ fontWeight: 'bold', px: 4 }}
+                        >
                             Confirm & Import {previewData.filter(u => u.status === 'Ready').length} Users
                         </Button>
                     )}

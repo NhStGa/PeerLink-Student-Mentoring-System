@@ -11,7 +11,7 @@ import theme from './theme';
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Student Mentoring';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => `PeerLink - ${title}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
     setup({ el, App, props }) {
         const root = createRoot(el);

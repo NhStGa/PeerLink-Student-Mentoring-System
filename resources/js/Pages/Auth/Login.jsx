@@ -47,15 +47,17 @@ export default function Login({ status, canResetPassword }) {
             <Container component="main" maxWidth="xs">
                 <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
                     
-                    {/* UPDATED: Added the Logo and Title side-by-side */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-                        <GroupsIcon color="primary" sx={{ fontSize: 36 }} />
-                        <Typography component="h1" variant="h5" fontWeight="bold" color="primary.main">
-                            Student P2P Mentoring
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+                        <GroupsIcon color="primary" sx={{ fontSize: 40 }} />
+                        <Typography component="h1" variant="h4" fontWeight="bold" color="primary.main" sx={{ letterSpacing: '-0.5px' }}>
+                            PeerLink
                         </Typography>
                     </Box>
+                    <Typography variant="subtitle1" align="center" color="text.primary" sx={{ fontWeight: 'medium', mb: 2 }}>
+                        A Student Peer Mentoring System
+                    </Typography>
                     
-                    <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
+                    <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 1 }}>
                         Sign in to continue
                     </Typography>
 
