@@ -17,7 +17,7 @@ PeerLink is a comprehensive web-based platform designed to bridge the gap betwee
 
 Before you begin, ensure your machine has the following installed:
 
-* **PHP:** Version 8.2 or higher
+* **PHP:** Version 8.2 or higher (Ensure the gd and zip extensions are enabled in your php.ini file).
 * **Composer:** Dependency manager for PHP
 * **Node.js & npm:** For compiling frontend React assets
 * **MySQL:** Database server (Preferably MySQL Workbench setup, can be standalone, or via XAMPP/Laragon)
@@ -40,6 +40,9 @@ cd student-mentoring-system
 ### 2. Install Dependencies
 
 Install both the backend (PHP) and frontend (JavaScript) packages:
+
+*(Note: Ensure the gd and zip extensions are enabled in your php.ini file).*
+*(Note: If you receive a PHP version error during the composer install, use `composer install --ignore-platform-reqs` instead).*
 
 ```bash
 composer install
@@ -66,7 +69,7 @@ php artisan key:generate
 ### 4. Database Setup
 
 1. Open your MySQL interface (recommended: MySQL Workbench).
-2. Create a brand new, empty database. A good name is `peerlink_db`.
+2. Create a brand new, empty database. A good name is `CREATE DATABASE peerlink_db;`.
 3. Open the `.env` file in the root of the project and update the database section to match your local credentials:
 
 ```ini
@@ -132,7 +135,3 @@ After successfully running the migrations and seeders, you can log into the syst
 * **Password:** `P2PSys2026`
 
 *(Note: If you create new accounts manually or via the Bulk Excel Importer, their default password will also be `P2PSys2026`)*
-
-```
-
-```
