@@ -32,7 +32,7 @@ Follow these steps exactly to get a local copy of PeerLink up and running.
 ### 1. Clone the Repository
 Open your terminal and clone the project to your local machine:
 ```bash
-git clone https://github.com/NhStGa/P2P-Mentoring-System.git
+git clone https://github.com/NhStGa/PeerLink-Student-Mentoring-System.git
 cd PeerLink-Student-Mentoring-System
 
 ```
