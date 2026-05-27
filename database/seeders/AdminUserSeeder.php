@@ -2,26 +2,25 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class AdminUserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Use updateOrCreate to prevent duplicates
-        \App\Models\User::updateOrCreate(
-            ['email' => 'falkenberg2609@gmail.com'], 
-            [
-                'fname' => 'System',         
-                'lname' => 'Admin',         
-                'mi' => 'D',                 
-                'password' => bcrypt('SysAdminMain!2'),
+        // Check if admin already exists to prevent duplicates
+        if (!User::where('email', 'admin@peerlink.com')->exists()) {
+            User::create([
+                'fname' => 'System',
+                'lname' => 'Administrator',
+                'email' => 'admin@peerlink.com',
+                'password' => Hash::make('P2PSys2026'),
                 'role' => 'admin',
-            ]
-        );
+                'status' => 'active',
+                'email_verified_at' => now(),
+            ]);
+        }
     }
 }
