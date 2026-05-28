@@ -487,13 +487,29 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
                     {!previewData.length ? (
                         <Box sx={{ textAlign: 'center', py: 5 }}>
                             <input type="file" accept=".xlsx, .xls, .csv" onChange={handleBulkUpload} id="file-input" style={{ display: 'none' }} />
-                            <label htmlFor="file-input">
-                                <Button variant="contained" component="span" disabled={isUploading}>
-                                    {isUploading ? 'Parsing File...' : 'Select Excel/CSV File'}
+                            
+                            {/* UPDATED: Put the buttons side-by-side using a Stack */}
+                            <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+                                <label htmlFor="file-input" style={{ margin: 0 }}>
+                                    <Button variant="contained" component="span" disabled={isUploading}>
+                                        {isUploading ? 'Parsing File...' : 'Select Excel/CSV File'}
+                                    </Button>
+                                </label>
+
+                                {/* NEW: Download Template Button */}
+                                <Button 
+                                    variant="contained" 
+                                    color="success" 
+                                    component="a" 
+                                    href={route('admin.users.bulk_template')}
+                                    sx={{ fontWeight: 'bold' }}
+                                >
+                                    Download Template
                                 </Button>
-                            </label>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                                Ensure your file has headers: <b>fname, lname, mi, email, role, student_number, year_level, program_code</b>
+                            </Stack>
+
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 3 }}>
+                                Ensure your file has headers: <b>fname, lname, mi, email, role, student_number, program_code, year_level</b>
                             </Typography>
                         </Box>
                     ) : (

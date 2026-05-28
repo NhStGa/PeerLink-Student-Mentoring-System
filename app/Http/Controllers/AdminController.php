@@ -115,7 +115,7 @@ class AdminController extends Controller
                         'semester_id' => $currentSemester->semester_id,
                         'student_id' => $user->id,
                     ], [
-                        'max_mentees' => 3,
+                        'max_mentees' => 5,
                         'is_active' => true,
                     ]);
                 }
@@ -354,7 +354,7 @@ class AdminController extends Controller
                             'semester_id' => $currentSemester->semester_id,
                             'student_id' => $user->id,
                         ], [
-                            'max_mentees' => 3,
+                            'max_mentees' => 5,
                             'is_active' => true,
                         ]);
                     }
@@ -363,5 +363,32 @@ class AdminController extends Controller
         });
 
         return back()->with('success', count($validated['users']) . ' accounts successfully imported!');
+    }
+
+    // NEW: Generate and download the Excel/CSV Template
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="PeerLink_Bulk_Import_Template.csv"',
+        ];
+
+        $columns = ['fname', 'lname', 'mi', 'email', 'role', 'student_number', 'program_code', 'year_level'];
+
+        $callback = function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            
+            // 1. Write the Header Row
+            fputcsv($file, $columns);
+            
+            // 2. Write Sample Data to help the Admin
+            fputcsv($file, ['John', 'Doe', 'A', 'john.doe@example.com', 'student', '23-1234-567', 'BSCS', '1st Year']);
+            fputcsv($file, ['Jane', 'Smith', 'B', 'jane.smith@example.com', 'mentor', '21-9876-543', 'BSIT', '3rd Year']);
+            fputcsv($file, ['System', 'Admin', '', 'admin2@peerlink.com', 'admin', '', '', '']);
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

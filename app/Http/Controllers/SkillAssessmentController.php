@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\SkillAssessment;
-use App\Models\SkillCategory; // <--- Import the Category model
+use App\Models\SkillCategory; 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class SkillAssessmentController extends Controller
 {
+    // =========================================================
+    // STANDARD DASHBOARD METHODS (Single Save)
+    // =========================================================
     public function create()
     {
-        // Fetch all categories and eager load their associated subjects
         $categories = SkillCategory::with('skillSubjects')->get();
-
-        // Fetch existing assessments for this user
         $existingAssessments = SkillAssessment::where('user_id', auth()->id())
             ->get()
-            ->keyBy('skill_id'); // Key by the new integer skill_id
+            ->keyBy('skill_id'); 
 
         return Inertia::render('Skills/Assessment', [
             'categories' => $categories,
@@ -28,7 +28,6 @@ class SkillAssessmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            // Ensure skill_id is an integer and exists in the skill_subjects table
             'skill_id' => 'required|integer|exists:skill_subjects,skill_id',
             'rating' => 'required|integer|min:1|max:5',
         ]);
@@ -36,13 +35,11 @@ class SkillAssessmentController extends Controller
         $userId = auth()->id();
         $skillId = $validated['skill_id'];
 
-        // 1. Check if an assessment already exists
         $exists = SkillAssessment::where('user_id', $userId)
             ->where('skill_id', $skillId)
             ->exists();
 
         if ($exists) {
-            // 2. Use the Query Builder to update directly via user_id and skill_id (Bypasses Primary Key issues)
             SkillAssessment::where('user_id', $userId)
                 ->where('skill_id', $skillId)
                 ->update([
@@ -50,7 +47,6 @@ class SkillAssessmentController extends Controller
                     'assessed_at' => now(),
                 ]);
         } else {
-            // 3. Create a new one
             SkillAssessment::create([
                 'user_id' => $userId,
                 'skill_id' => $skillId,
@@ -60,5 +56,56 @@ class SkillAssessmentController extends Controller
         }
 
         return back()->with('success', 'Skill rating saved successfully.');
+    }
+
+    // =========================================================
+    // ONBOARDING METHODS (Bulk Save)
+    // =========================================================
+    
+    // 1. Display the First-Time Onboarding Screen
+    public function onboarding()
+    {
+        // If they already have assessments, they probably shouldn't be here. 
+        // Redirect them to the dashboard just in case they try to force the URL.
+        if (SkillAssessment::where('user_id', auth()->id())->exists()) {
+            return redirect()->route('dashboard');
+        }
+
+        $categories = SkillCategory::with('skillSubjects')->get();
+
+        return Inertia::render('Skills/FirstAssessment', [
+            'categories' => $categories
+        ]);
+    }
+
+    // 2. Save multiple skills at once and redirect to dashboard
+    public function onboardingStore(Request $request)
+    {
+        $validated = $request->validate([
+            'assessments' => 'required|array|min:5', // Force them to pick at least 5 skills
+            'assessments.*.skill_id' => 'required|integer|exists:skill_subjects,skill_id',
+            'assessments.*.rating' => 'required|integer|min:1|max:5',
+        ]);
+
+        $userId = auth()->id();
+        $now = now();
+        $insertData = [];
+
+        foreach ($validated['assessments'] as $assessment) {
+            $insertData[] = [
+                'user_id' => $userId,
+                'skill_id' => $assessment['skill_id'],
+                'rating' => $assessment['rating'],
+                'assessed_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Bulk insert all selected skills into the database
+        SkillAssessment::insert($insertData);
+
+        // Onboarding complete! Send them to the traffic cop to route them to their dashboard
+        return redirect()->route('dashboard')->with('success', 'Welcome to PeerLink! Your initial skills have been saved.');
     }
 }

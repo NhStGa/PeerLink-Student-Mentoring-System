@@ -36,7 +36,12 @@ Route::get('/dashboard', function () {
     if ($user->role === 'mentor') {
         return redirect()->route('mentor.dashboard');
     }
-    
+    // If they are a student, check if they have saved any skills
+    $hasSkills = \App\Models\SkillAssessment::where('user_id', $user->id)->exists();
+    if (!$hasSkills) {
+        return redirect()->route('skills.onboarding');
+    }
+
     // Default to student dashboard
     return redirect()->route('student.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -87,8 +92,9 @@ Route::middleware('auth')->group(function () {
     // Admin Routes
     Route::middleware(EnsureUserIsAdmin::class)->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-        
-        // NEW: Bulk Action Route (Must be above /users/{user})
+        // Download Template Route
+        Route::get('/users/bulk-template', [AdminController::class, 'downloadTemplate'])->name('admin.users.bulk_template');
+        // Bulk Action Route (Must be above /users/{user})
         Route::patch('/users/bulk-year', [AdminController::class, 'bulkUpdateYear'])->name('admin.users.bulk_year');
         Route::post('/users/bulk-preview', [AdminController::class, 'previewBulk'])->name('admin.users.bulk_preview');
         Route::post('/users/bulk-store', [AdminController::class, 'storeBulk'])->name('admin.users.bulk_store');
@@ -150,6 +156,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/mentor/apply', [MentorApplicationController::class, 'create'])->name('mentor.apply');
     Route::post('/mentor/apply', [MentorApplicationController::class, 'store'])->name('mentor.store');
+    // First-Time User Onboarding Routes
+    Route::get('/onboarding-skills', [SkillAssessmentController::class, 'onboarding'])->name('skills.onboarding');
+    Route::post('/onboarding-skills', [SkillAssessmentController::class, 'onboardingStore'])->name('skills.onboarding.store');
+    // Regular Skill Assessment Routes
     Route::get('/skills/assess', [SkillAssessmentController::class, 'create'])->name('skills.assess');
     Route::post('/skills/assess', [SkillAssessmentController::class, 'store'])->name('skills.store');
     Route::get('/student/mentorship-requests', [MentorshipRequestController::class, 'index'])->name('student.mentorship.index');

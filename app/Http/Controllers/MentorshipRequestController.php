@@ -169,6 +169,24 @@ class MentorshipRequestController extends Controller
             return back()->with('error', 'Cannot approve: No active academic semester found in the system.');
         }
 
+        // NEW: Check Maximum Mentee Limit
+        // 1. Get the mentor's specific limit for this semester (Fallback to 5 if not found)
+        $semesterMentor = \App\Models\SemesterMentor::where('semester_id', $currentSemester->semester_id)
+            ->where('student_id', $request->user()->id)
+            ->first();
+            
+        $maxMentees = $semesterMentor ? $semesterMentor->max_mentees : 5;
+
+        // 2. Count how many ACTIVE mentees the mentor currently has
+        $activeMenteesCount = \App\Models\MentorMenteeRelationship::where('mentor_id', $request->user()->id)
+            ->where('status', 'Active')
+            ->count();
+
+        // 3. Block approval if the limit is reached
+        if ($activeMenteesCount >= $maxMentees) {
+            return back()->with('error', "Cannot approve: You have already reached your maximum limit of {$maxMentees} active mentees.");
+        }
+
         \Illuminate\Support\Facades\DB::transaction(function () use ($mentorshipRequest, $currentSemester, $request) {
             // 1. Mark request as Approved
             $mentorshipRequest->update([
@@ -186,7 +204,7 @@ class MentorshipRequestController extends Controller
                 'started_at' => now(),
             ]);
 
-            // NEW: Notify the Student of the Approval!
+            // Notify the Student of the Approval!
             \App\Models\Notification::create([
                 'user_id' => $mentorshipRequest->student_id,
                 'sender_id' => $request->user()->id,

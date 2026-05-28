@@ -91,7 +91,7 @@ class MentorApplicationController extends Controller
                     'student_id' => $user->id,
                 ],
                 [
-                    'max_mentees' => 3, 
+                    'max_mentees' => 5, 
                     'is_active' => true,
                 ]
             );

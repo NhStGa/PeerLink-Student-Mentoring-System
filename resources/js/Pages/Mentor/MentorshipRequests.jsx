@@ -1,10 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+// UPDATED: Added usePage hook
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useRef } from 'react';
 import { 
     Container, Paper, Typography, Box, Button, Grid, 
     List, ListItem, ListItemButton, ListItemText, Chip,
-    Avatar, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Stack
+    Avatar, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Stack, Alert
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -15,18 +16,20 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 export default function MentorshipRequests({ auth, requests }) {
+    // NEW: Extract flash messages passed from the Laravel backend
+    const { flash } = usePage().props;
+
     const [selectedRequest, setSelectedRequest] = useState(requests[0] || null);
     
     // Dialog States
     const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
     const [dialogOpen, setDialogOpen] = useState(false);
 
-    // NEW: Ref to help mobile users scroll to the details panel automatically
+    // Ref to help mobile users scroll to the details panel automatically
     const detailsRef = useRef(null);
 
     const handleSelectRequest = (req) => {
         setSelectedRequest(req);
-        // NEW: On mobile, automatically scroll down to the details panel when a request is clicked
         if (window.innerWidth < 900) {
             setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
         }
@@ -40,16 +43,30 @@ export default function MentorshipRequests({ auth, requests }) {
     const confirmAction = () => {
         if (actionType === 'approve') {
             router.patch(route('mentor.requests.approve', selectedRequest.id), {}, {
-                onSuccess: () => {
+                preserveScroll: true, // Prevents Inertia from doing a hard scroll reset
+                onSuccess: (page) => {
                     setDialogOpen(false);
-                    if (selectedRequest) setSelectedRequest({ ...selectedRequest, status: 'Approved' });
+                    
+                    if (page.props.flash?.error) {
+                        // If there is an error, scroll to the top to show the alert!
+                        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+                    } else if (selectedRequest) {
+                        // If success, update the local state
+                        setSelectedRequest({ ...selectedRequest, status: 'Approved' });
+                    }
                 }
             });
         } else if (actionType === 'reject') {
             router.patch(route('mentor.requests.reject', selectedRequest.id), {}, {
-                onSuccess: () => {
+                preserveScroll: true,
+                onSuccess: (page) => {
                     setDialogOpen(false);
-                    if (selectedRequest) setSelectedRequest({ ...selectedRequest, status: 'Rejected' });
+                    
+                    if (page.props.flash?.error) {
+                        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+                    } else if (selectedRequest) {
+                        setSelectedRequest({ ...selectedRequest, status: 'Rejected' });
+                    }
                 }
             });
         }
@@ -72,7 +89,6 @@ export default function MentorshipRequests({ auth, requests }) {
             <Container 
                 maxWidth="xl" 
                 sx={{ 
-                    // UPDATED: Changed height to minHeight to allow natural stacking on mobile
                     minHeight: 'calc(100vh - 112px)', 
                     display: 'flex', 
                     flexDirection: 'column', 
@@ -90,11 +106,21 @@ export default function MentorshipRequests({ auth, requests }) {
                     <Typography variant="h4" fontWeight="bold">Mentorship Requests</Typography>
                 </Box>
 
-                {/* UPDATED: flexWrap allows stacking on mobile (xs) and side-by-side on desktop (md) */}
+                {/* NEW: Display Backend Flash Messages (Errors/Success) */}
+                {flash?.error && (
+                    <Alert severity="error" sx={{ mb: 3, borderRadius: 2, fontWeight: 'bold' }}>
+                        {flash.error}
+                    </Alert>
+                )}
+                {flash?.success && (
+                    <Alert severity="success" sx={{ mb: 3, borderRadius: 2, fontWeight: 'bold' }}>
+                        {flash.success}
+                    </Alert>
+                )}
+
                 <Grid container spacing={3} sx={{ height: { xs: 'auto', md: '100%' }, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
                     
                     {/* LEFT COLUMN: List of Requests */}
-                    {/* UPDATED: Width is 100% on mobile, fixed 400px on desktop. Height is constrained to 400px on mobile to allow scrolling. */}
                     <Grid item sx={{ width: { xs: '100%', md: '400px' }, flexShrink: 0, height: { xs: '400px', md: '100%' } }}>
                         <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider', bgcolor: '#f8fafc', borderRadius: '12px 12px 0 0' }}>
@@ -140,7 +166,6 @@ export default function MentorshipRequests({ auth, requests }) {
                     </Grid>
 
                     {/* RIGHT COLUMN: Application Details */}
-                    {/* UPDATED: Height automatically adjusts on mobile. Ref added for auto-scroll. */}
                     <Grid item ref={detailsRef} sx={{ flexGrow: 1, height: { xs: 'auto', md: '100%' }, width: { xs: '100%', md: 'auto' }, minWidth: 0 }}>
                         <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3, boxShadow: 3 }}>
                             {selectedRequest ? (

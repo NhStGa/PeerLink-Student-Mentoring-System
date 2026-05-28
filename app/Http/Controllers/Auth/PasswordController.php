@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 class PasswordController extends Controller
 {
-    // NEW: Render the Force Change Page
+    // Render the Force Change Page
     public function forceChange()
     {
         return Inertia::render('Auth/ForcePasswordChange');
@@ -31,11 +31,19 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        // NEW: Check if they were forced, then remove the flag!
+        // Check if they were forced, then remove the flag!
         $wasForced = $request->session()->pull('must_change_password', false);
 
         if ($wasForced) {
-            return redirect()->route('dashboard')->with('success', 'Security update complete! Welcome to your dashboard.');
+            // NEW: If the user is a student, route them to the onboarding skills page
+            if ($request->user()->role === 'student') {
+                return redirect()->route('skills.onboarding')
+                    ->with('success', 'Password updated securely! Next, let’s set up your skill profile.');
+            }
+            
+            // For Mentors and Admins, send them straight to their dashboard
+            return redirect()->route('dashboard')
+                ->with('success', 'Security update complete! Welcome to your dashboard.');
         }
 
         return back()->with('success', 'Password updated successfully!');

@@ -12,6 +12,12 @@ class StudentController extends Controller
     {
         $user = $request->user();
 
+        // ONBOARDING GUARD (Prevents direct URL bypass)
+        $hasSkills = \App\Models\SkillAssessment::where('user_id', auth()->id())->exists();
+        if (!$hasSkills) {
+            return redirect()->route('skills.onboarding');
+        }
+
         // Fetch the student's active mentors
         $activeMentors = \App\Models\MentorMenteeRelationship::where('student_id', $user->id)
             ->where('status', 'Active')
