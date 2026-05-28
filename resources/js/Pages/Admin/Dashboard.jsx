@@ -54,8 +54,8 @@ export default function AdminDashboard({ auth, users, pendingApplications = [], 
     });
 
     // --- Dynamic Stats Calculations ---
-    const totalUsers = users.length;
-    const totalActive = users.filter(u => u.status.toLowerCase() === 'active').length;
+    const totalUsers = users.length + 1;
+    const totalActive = users.filter(u => u.status.toLowerCase() === 'active').length + 1;
     const totalMentors = users.filter(u => u.role.toLowerCase() === 'mentor').length;
     const totalStudents = users.filter(u => u.role.toLowerCase() === 'student').length;
     const totalAdmins = users.filter(u => u.role.toLowerCase() === 'admin').length + 1;
